@@ -1,4 +1,4 @@
 pyvmd
 =====
 
-Python tools for VMD
+Python tools for VMD (Visual Molecular Dynamics)
