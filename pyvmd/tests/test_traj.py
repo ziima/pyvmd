@@ -1,19 +1,13 @@
 """
 Tests for trajectory analysis utilities.
 """
-import os
 import unittest
 
 import VMD
 
 from pyvmd.traj import Loader
 
-
-def data(filename):
-    """
-    Return full filename of the test datafile.
-    """
-    return os.path.join(os.path.dirname(__file__), 'data', filename)
+from .utils import data
 
 
 X_COORDS = [-1.4911566972732544, -1.4851371049880981, -1.4858486652374268, -1.477394700050354, -1.4746015071868896,

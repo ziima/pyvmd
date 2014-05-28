@@ -67,6 +67,12 @@ class Loader(object):
         """
         self._callbacks.append(callback)
 
+    def add_collector(self, collector):
+        """
+        Adds collector to be run on every frame.
+        """
+        self._callbacks.append(collector.collect)
+
     def run(self):
         """
         Run the trajectory.
