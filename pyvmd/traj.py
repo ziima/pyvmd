@@ -6,6 +6,9 @@ import logging
 from Molecule import Molecule
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 class LoadStatus(object):
     """
     Holds information about loading.
@@ -74,7 +77,7 @@ class Loader(object):
             while True:
                 # Load 'step' frames
                 stop = start + self.step - 1
-                logging.debug('Loading %s from %d to %d', filename, start, stop)
+                LOGGER.debug('Loading %s from %d to %d', filename, start, stop)
                 self.molecule.load(filename, first=start, last=stop)
                 loaded = self.molecule.numFrames()
                 if not loaded:
@@ -94,4 +97,4 @@ class Loader(object):
                     # Nothing else to be loaded for this filename
                     break
                 start += self.step
-        logging.info('Analyzed %s frames.', status.frame + 1)
+        LOGGER.info('Analyzed %s frames.', status.frame + 1)
