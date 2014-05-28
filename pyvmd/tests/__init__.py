@@ -1,6 +1,8 @@
 """
 Unittests for pyvmd.
 """
+import os
+import sys
 import unittest
 
 if not hasattr(unittest, 'skip'):
@@ -9,4 +11,21 @@ if not hasattr(unittest, 'skip'):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    # Start coverage if required
+    cover = os.environ.get('COVERAGE')
+    if cover:
+        import coverage
+        cov = coverage.coverage(branch=True, source=['pyvmd'])
+        cov.start()
+
+    unit = unittest.main(exit=False)
+
+    if cover:
+        cov.stop()
+        cov.save()
+
+    if not hasattr(unit, 'result'):
+        # Unittest help exit
+        sys.exit(2)
+    else:
+        sys.exit(not unit.result.wasSuccessful())
