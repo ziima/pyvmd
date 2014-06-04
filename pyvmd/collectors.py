@@ -31,16 +31,73 @@ class Collector(object):
         raise NotImplementedError
 
 
-RMSDSet = namedtuple('RMSDSet', ('selection', 'name'))
+DataSet = namedtuple('DataSet', ('selection', 'name'))
 
 
-class RMSDCollector(Collector):
+class DataCollector(Collector):
+    """
+    Base class for collectors which collects data for several different selections.
+    """
+    def __init__(self, output):
+        """
+        Creates selection collector.
+
+        @param output: Output filename
+        """
+        super(DataCollector, self).__init__(output)
+        self._datasets = []
+        # Last used ID for automatically generated names
+        self._autoid = 0
+
+    def _prepare_output(self):
+        """
+        Creates or cleans the output file and writes the header.
+        """
+        with open(self.output, 'w') as out:
+            out.write('#Frame  ')
+            for dataset in self._datasets:
+                out.write(' %10s' % dataset.name)
+            out.write('\n')
+
+    def _write_data(self, frame, data):
+        """
+        Writes data row into output file
+        """
+        with open(self.output, 'a') as out:
+            out.write('%8d' % frame)
+            for value in data:
+                out.write(' %10.4f' % value)
+            out.write('\n')
+
+    def _check_name(self, name):
+        for dataset in self._datasets:
+            if name == dataset.name:
+                raise ValueError("The data set name '%s' is already used." % name)
+
+    def add_selection(self, selection, name=None):
+        """
+        Adds selection to analysis.
+
+        @param selection: The selection string.
+        @param name: Name of the column in output file. If not provided, it is generated in form 'dataXXXXX'.
+        """
+        if name is None:
+            self._autoid += 1
+            name = 'data%05d' % self._autoid
+        else:
+            # Check if name was already used
+            self._check_name(name)
+        self._datasets.append(DataSet(selection, name))
+        LOGGER.debug("Added data set '%s' under name '%s'", selection, name)
+
+
+class RMSDCollector(DataCollector):
     """
     Collects RMSD data.
     """
     def __init__(self, reference, output):
         """
-        Create RMSD collector.
+        Creates RMSD collector.
 
         @param reference: Reference molecule
         @type reference: Molecule
@@ -48,17 +105,6 @@ class RMSDCollector(Collector):
         """
         super(RMSDCollector, self).__init__(output)
         self.reference = reference
-        self._rmsdsets = []
-        # Last used ID for automatically generated names
-        self._autoid = 0
-
-    def _prepare_output(self):
-        # Clean/create the output file and write the header
-        with open(self.output, 'w') as out:
-            out.write('#Frame  ')
-            for rmsdset in self._rmsdsets:
-                out.write(' %10s' % rmsdset.name)
-            out.write('\n')
 
     def collect(self, status):
         if status.frame == 0:
@@ -75,9 +121,9 @@ class RMSDCollector(Collector):
 
         whole = VMD.atomsel.atomsel('all', molid=status.molecule.id)
 
-        for rmsdset in self._rmsdsets:
-            ref = VMD.atomsel.atomsel(rmsdset.selection, frame=self.reference.curFrame(), molid=self.reference.id)
-            sel = VMD.atomsel.atomsel(rmsdset.selection, molid=status.molecule.id)
+        for dataset in self._datasets:
+            ref = VMD.atomsel.atomsel(dataset.selection, frame=self.reference.curFrame(), molid=self.reference.id)
+            sel = VMD.atomsel.atomsel(dataset.selection, molid=status.molecule.id)
 
             # Align coordinates to the reference
             whole.move(sel.fit(ref))
@@ -90,29 +136,4 @@ class RMSDCollector(Collector):
         status.molecule.setFrame(cur_frame)
 
         # Write the data
-        with open(self.output, 'a') as out:
-            out.write('%8d' % status.frame)
-            for value in data:
-                out.write(' %10.4f' % value)
-            out.write('\n')
-
-    def _check_name(self, name):
-        for rmsdset in self._rmsdsets:
-            if name == rmsdset.name:
-                raise ValueError("The data set name '%s' is already used." % name)
-
-    def add_selection(self, selection, name=None):
-        """
-        Adds selection to RMSD analysis.
-
-        @param selection: The selection for RMSD.
-        @param name: Name of the column in output file. If not provided, it is generated in form 'rmsdXXXXX'.
-        """
-        if name is None:
-            self._autoid += 1
-            name = 'rmsd%05d' % self._autoid
-        else:
-            # Check if name was already used
-            self._check_name(name)
-        LOGGER.debug("Add selection '%s' under name '%s'", selection, name)
-        self._rmsdsets.append(RMSDSet(selection, name))
+        self._write_data(status.frame, data)
