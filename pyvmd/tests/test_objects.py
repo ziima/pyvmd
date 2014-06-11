@@ -6,7 +6,7 @@ import unittest
 from Molecule import Molecule as _Molecule
 import VMD
 
-from pyvmd.objects import Molecule
+from pyvmd.objects import Molecule, FORMAT_PDB
 from .utils import data
 
 
@@ -15,33 +15,90 @@ class TestMolecule(unittest.TestCase):
     Test `Molecule` class.
     """
     def setUp(self):
-        _mol = _Molecule()
-        _mol.load(data('water.psf'))
-        _mol.load(data('water.pdb'))
-        _mol.load(data('water.1.dcd'))
-        self.molid = _mol.id
+        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        VMD.molecule.read(molid, 'dcd', data('water.1.dcd'), waitfor=-1)
+        self.molid = molid
 
     def tearDown(self):
-        VMD.molecule.delete(self.molid)
+        # Delete all molecules
+        for molid in VMD.molecule.listall():
+            VMD.molecule.delete(molid)
 
-    def test_molecule(self):
-        # Test basic features of Molecule
+    def test_molecule_properties(self):
+        # Test basic properties of Molecule
         mol = Molecule(self.molid)
 
-        # Check active frame
-        self.assertEqual(mol.frame, 12)
-        # Check change of active frame works
+        # Check frame property
         mol.frame = 3
         self.assertEqual(VMD.molecule.get_frame(self.molid), 3)
         self.assertEqual(mol.frame, 3)
 
-        # Check comparison
-        same = Molecule(self.molid)
-        self.assertEqual(mol, same)
+        mol.frame = 8
+        self.assertEqual(VMD.molecule.get_frame(self.molid), 8)
+        self.assertEqual(mol.frame, 8)
 
-        _other = _Molecule()
-        other = Molecule(_other.id)
-        self.assertNotEqual(mol, other)
+        # Check name property
+        mol.name = 'My precious'
+        self.assertEqual(mol.name, 'My precious')
+        self.assertEqual(VMD.molecule.name(self.molid), 'My precious')
+        mol.name = 'The Ring'
+        self.assertEqual(mol.name, 'The Ring')
+        self.assertEqual(VMD.molecule.name(self.molid), 'The Ring')
+
+        # Check molecule property
+        self.assertIsInstance(mol.molecule, _Molecule)
+
+        # Check error if molecule does not exists
+        self.assertRaises(ValueError, Molecule, 66000)
+
+    def test_molecule_create(self):
+        # Test molecule creation
+        old_molids = VMD.molecule.listall()
+        created = Molecule.create()
+        self.assertNotIn(created.molid, old_molids)
+        self.assertTrue(VMD.molecule.exists(created.molid))
+        self.assertEqual(VMD.molecule.get_filenames(created.molid), [])
+        self.assertEqual(VMD.molecule.get_filetypes(created.molid), [])
+
+        # Check create with name
+        other = Molecule.create('The One')
+        self.assertEqual(other.name, 'The One')
+        self.assertTrue(VMD.molecule.exists(other.molid))
+        self.assertEqual(VMD.molecule.get_filenames(other.molid), [])
+        self.assertEqual(VMD.molecule.get_filetypes(other.molid), [])
+
+    def test_molecule_delete(self):
+        # Test molecule deletion
+        mol = Molecule(self.molid)
+        mol.delete()
+        self.assertFalse(VMD.molecule.exists(self.molid))
+
+    def test_molecule_load(self):
+        # Test file loading
+        mol = Molecule.create()
+        mol.load(data('water.psf'))
+        self.assertEqual(VMD.molecule.get_filenames(mol.molid), [data('water.psf')])
+        self.assertEqual(VMD.molecule.get_filetypes(mol.molid), ['psf'])
+        mol.load(data('water.pdb'), FORMAT_PDB)
+        self.assertEqual(VMD.molecule.get_filenames(mol.molid), [data('water.psf'), data('water.pdb')])
+        self.assertEqual(VMD.molecule.get_filetypes(mol.molid), ['psf', 'pdb'])
+        mol.load(data('water.1.dcd'))
+        self.assertEqual(VMD.molecule.get_filenames(mol.molid), [data('water.psf'), data('water.pdb'),
+                                                                   data('water.1.dcd')])
+        self.assertEqual(VMD.molecule.get_filetypes(mol.molid), ['psf', 'pdb', 'dcd'])
+
+        self.assertRaises(ValueError, mol.load, 'no_extension')
+
+    def test_molecule_comparison(self):
+        # Test molecule comparison
+        mol1 = Molecule(self.molid)
+        mol2 = Molecule(self.molid)
+        other = Molecule.create()
+
+        self.assertEqual(mol1, mol1)
+        self.assertEqual(mol1, mol2)
+        self.assertNotEqual(mol1, other)
+        self.assertNotEqual(mol2, other)
 
     def test_frames(self):
         # Test frames wrapper
@@ -109,3 +166,7 @@ class TestMolecule(unittest.TestCase):
                   -1.4535547494888306, -1.4120502471923828, -1.385347843170166, -1.3674825429916382,
                   -1.4858486652374268]
         self.assertEqual(_get_x_coord(), coords)
+
+        # Invalid key for slice
+        with self.assertRaises(TypeError):
+            del mol.frames[None]

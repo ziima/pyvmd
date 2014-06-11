@@ -2,12 +2,38 @@
 High level interface to the VMD objects.
 """
 import logging
+import os.path
 
 from Molecule import Molecule as _Molecule
 import VMD
 
 
 LOGGER = logging.getLogger(__name__)
+
+# File formats
+FORMAT_DCD = 'dcd'
+FORMAT_PDB = 'pdb'
+FORMAT_PSF = 'psf'
+# Dictionary to translate file extensions to file formats
+FORMATS = {
+    'dcd': FORMAT_DCD,
+    'pdb': FORMAT_PDB,
+    'psf': FORMAT_PSF,
+}
+
+
+def guess_file_format(filename):
+    """
+    Returns format of the file by guess.
+
+    If format can't be detected returns None.
+    """
+    dummy, ext = os.path.splitext(filename)
+    if not ext or ext == '.':
+        return None
+    ext = ext[1:]
+    # If the extension is not found in dictionary, return it as is
+    return FORMATS.get(ext, ext)
 
 
 class Frames(object):
@@ -84,6 +110,43 @@ class Molecule(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    @classmethod
+    def create(cls, name=None):
+        """
+        Creates new molecule.
+
+        @name: Name of the molecule.
+        """
+        molid = VMD.molecule.new(name or 'molecule')
+        return cls(molid)
+
+    def delete(self):
+        """
+        Deletes the molecule.
+        """
+        VMD.molecule.delete(self.molid)
+
+    def load(self, filename, filetype=None, start=0, stop=-1, step=1, wait=True, volsets=None):
+        """
+        Loads data from file into the molecule.
+
+        @param filename: Name of file to be loaded
+        @param filetype: Format of file. If not present it is guessed.
+        @param wait: Whather to wait until file is completely loaded.
+        """
+        assert isinstance(start, int) and start >= 0
+        assert isinstance(stop, int) and stop >= -1
+        assert isinstance(step, int) and step > 0
+        if filetype is None:
+            filetype = guess_file_format(filename)
+            if filetype is None:
+                raise ValueError("Cannot detect filetype for '%s'" % filename)
+        waitfor = wait and -1 or 0
+        volsets = volsets or []
+        VMD.molecule.read(self.molid, filetype, filename, beg=start, end=stop, skip=step, waitfor=waitfor,
+                          volsets=volsets)
+
+    @property
     def molecule(self):
         """
         Returns respective VMD.Molecule instance.
@@ -107,3 +170,11 @@ class Molecule(object):
         Returns frames descriptor.
         """
         return Frames(self)
+
+    def _get_name(self):
+        return VMD.molecule.name(self.molid)
+
+    def _set_name(self, name):
+        VMD.molecule.rename(self.molid, name)
+
+    name = property(_get_name, _set_name, doc="Molecule's name")
