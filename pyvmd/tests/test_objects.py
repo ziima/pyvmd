@@ -3,10 +3,11 @@ Tests for objects.
 """
 import unittest
 
+from numpy import ndarray
 from Molecule import Molecule as _Molecule
 import VMD
 
-from pyvmd.objects import Molecule, _MoleculeManager, FORMAT_PDB
+from pyvmd.objects import Atom, Molecule, _MoleculeManager, FORMAT_PDB, NOW
 from .utils import data
 
 
@@ -268,3 +269,121 @@ class TestMoleculeManager(unittest.TestCase):
 
         # Manager correctly returns the new molecule
         self.assertEqual(man['Unique'], mol2)
+
+
+class TestAtom(unittest.TestCase):
+    """
+    Test `Atom` class.
+    """
+    def tearDown(self):
+        # Delete all molecules
+        for molid in VMD.molecule.listall():
+            VMD.molecule.delete(molid)
+
+    def test_properties(self):
+        # Test getters and setters
+        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol = Molecule(molid)
+
+        atom = Atom(0)
+        # Test getters
+        self.assertEqual(atom.molecule, mol)
+        self.assertEqual(atom.frame, NOW)
+        self.assertAlmostEqual(atom.x, -1.493)
+        self.assertAlmostEqual(atom.y, 1.900)
+        self.assertAlmostEqual(atom.z, 1.280)
+        self.assertIsInstance(atom.coords, ndarray)
+        self.assertEqual(list(atom.coords), [-1.4930000305175781, 1.8999999761581421, 1.2799999713897705])
+        # Test setters
+        atom.x = 23.9
+        atom.y = -200.45
+        atom.z = 0
+        sel = VMD.atomsel.atomsel('index 0', molid=molid)
+        self.assertEqual(sel.get('x'), [23.899999618530273])
+        self.assertEqual(sel.get('y'), [-200.4499969482422])
+        self.assertEqual(sel.get('z'), [0])
+        #XXX: There are some troubles with rounding in set
+        self.assertAlmostEqual(atom.x, 23.9, places=6)
+        self.assertAlmostEqual(atom.y, -200.45, places=5)
+        self.assertAlmostEqual(atom.z, 0)
+        self.assertEqual(list(atom.coords), [23.899999618530273, -200.4499969482422, 0])
+
+        # Set all coordinates
+        atom.coords = (-90.56, 42, 17.85)
+        self.assertEqual(sel.get('x'), [-90.55999755859375])
+        self.assertEqual(sel.get('y'), [42])
+        self.assertEqual(sel.get('z'), [17.850000381469727])
+        #XXX: There are some troubles with rounding in set
+        self.assertAlmostEqual(atom.x, -90.56, places=5)
+        self.assertAlmostEqual(atom.y, 42)
+        self.assertAlmostEqual(atom.z, 17.85, places=6)
+        self.assertEqual(list(atom.coords), [-90.55999755859375, 42, 17.850000381469727])
+
+    def test_frame_property(self):
+        # Test frame property works correctly
+        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        VMD.molecule.read(molid, 'dcd', data('water.1.dcd'), waitfor=-1)
+        mol = Molecule(molid)
+
+        # Create atom linked to the molecule frame
+        atom = Atom(0)
+        self.assertAlmostEqual(atom.x, -1.3421925)
+        # Change the molecule frame, the atom will follow
+        mol.frame = 0
+        self.assertAlmostEqual(atom.x, -1.493)
+        mol.frame = 4
+        self.assertAlmostEqual(atom.x, -1.4773947)
+
+        # Define the atom's frame
+        atom.frame = 9
+        self.assertAlmostEqual(atom.x, -1.4120502)
+        # Change the molecule frame, the atom keeps its frame
+        mol.frame = 11
+        self.assertAlmostEqual(atom.x, -1.4120502)
+
+        # Set the atom's frame back to the molecule's frame
+        atom.frame = NOW
+        self.assertAlmostEqual(atom.x, -1.3674825)
+
+    def test_constructors(self):
+        # Test various ways of Atom instance creation
+        molid1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        VMD.molecule.read(molid1, 'dcd', data('water.1.dcd'), waitfor=-1)
+        mol1 = Molecule(molid1)
+        molid2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol2 = Molecule(molid2)
+        VMD.molecule.set_top(molid2)
+
+        # Top molecule and NOW
+        atom = Atom(0)
+        self.assertEqual(atom.molecule, mol2)
+        self.assertEqual(atom.frame, NOW)
+        self.assertAlmostEqual(atom.x, -1.493)
+
+        # Molecule and frame
+        atom = Atom(0, molecule=mol1, frame=5)
+        self.assertEqual(atom.molecule, mol1)
+        self.assertEqual(atom.frame, 5)
+        self.assertAlmostEqual(atom.x, -1.4746015)
+
+        # Get atom using selection string
+        atom = Atom.pick('resid 2 and name OH2')
+        self.assertEqual(atom.molecule, mol2)
+        self.assertEqual(atom.frame, NOW)
+        self.assertAlmostEqual(atom.x, 0.337)
+
+        # Get atom using selection string, molecule and frame
+        atom = Atom.pick('resid 2 and name OH2', molecule=mol1, frame=8)
+        self.assertEqual(atom.molecule, mol1)
+        self.assertEqual(atom.frame, 8)
+        self.assertAlmostEqual(atom.x, 0.3521036)
+
+        # Atom which does not exist
+        with self.assertRaises(ValueError):
+            Atom(8947)
+
+        # Selection which returns none or too many atoms
+        with self.assertRaises(ValueError):
+            Atom.pick('all')
+        with self.assertRaises(ValueError):
+            Atom.pick('none')

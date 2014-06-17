@@ -4,6 +4,7 @@ High level interface to the VMD objects.
 import logging
 import os.path
 
+from numpy import array
 from Molecule import Molecule as _Molecule
 import VMD
 
@@ -271,3 +272,131 @@ class _MoleculeManager(object):
 
 
 MOLECULES = _MoleculeManager()
+
+
+# Constant which always references active frame
+NOW = -1
+
+
+class Atom(object):
+    """
+    Atom representation.
+
+    This class is a proxy to a atom in molecule loaded into VMD.
+    """
+    def __init__(self, index, molecule=None, frame=NOW):
+        """
+        Creates atom representation.
+
+        @param index: Index of the atom
+        @param molecule: Atom's molecule
+        @type molecule: Molecule
+        @param frame: Atom's frame
+        @type frame: Non-negative integer or NOW
+        """
+        assert isinstance(index, int) and index >= 0
+        if molecule is None:
+            molecule = MOLECULES.top
+        else:
+            assert isinstance(molecule, Molecule)
+        assert frame == NOW or (isinstance(frame, int) and frame >= 0)
+        # Check if index makes sense
+        if index >= VMD.molecule.numatoms(molecule.molid):
+            raise ValueError("Atom %d doesn't exist in '%s' at %s" % (index, molecule, frame))
+        self.index = index
+        self._molecule = molecule
+        self._frame = frame
+        self._atomsel = None
+
+    def __repr__(self):
+        return '<%s: %d of %d at %d>' % (type(self).__name__, self.index, self._molecule.molid, self._frame)
+
+    @classmethod
+    def pick(cls, selection, molecule=None, frame=NOW):
+        """
+        Creates atom from selection text.
+
+        @param selection: Selection text
+        @param molecule: Molecule to select from. Top if not defined.
+        @type molecule: Molecule
+        @param frame: Atom's frame
+        @type frame: Non-negative integer or NOW
+        """
+        if molecule is None:
+            molecule = MOLECULES.top
+        else:
+            assert isinstance(molecule, Molecule)
+        assert frame == NOW or (isinstance(frame, int) and frame >= 0)
+
+        sel = VMD.atomsel.atomsel(selection, frame=frame, molid=molecule.molid)
+        if len(sel) != 1:
+            raise ValueError("Selection '%s' doesn't define single atom in '%s' at %s" % (selection, molecule, frame))
+        self = cls(sel.get('index')[0], molecule, frame)
+        # Set the atomsel, so it does not have to be created again
+        self._atomsel = sel
+        return self
+
+    @property
+    def molecule(self):
+        "Molecule"
+        return self._molecule
+
+    def _get_frame(self):
+        return self._frame
+
+    def _set_frame(self, frame):
+        self._atomsel.frame = frame
+        self._frame = frame
+
+    frame = property(_get_frame, _set_frame, doc="Frame")
+
+    @property
+    def atomsel(self):
+        """
+        Returns respective 'VMD.atomsel' instance.
+        """
+        if self._atomsel is None:
+            self._atomsel = VMD.atomsel.atomsel('index %d' % self.index, frame=self._frame, molid=self._molecule.molid)
+        return self._atomsel
+
+    ############################################################################
+    # Atom's data
+    # Getters and setters for atom's data
+    def _getter(self, name):
+        return self.atomsel.get(name)[0]
+
+    def _setter(self, name, value):
+        return self.atomsel.set(name, value)
+
+    # Coordinates
+    def _get_x(self):
+        return self._getter('x')
+
+    def _set_x(self, value):
+        return self._setter('x', value)
+
+    x = property(_get_x, _set_x, doc="Coordinate in 'x' dimension.")
+
+    def _get_y(self):
+        return self._getter('y')
+
+    def _set_y(self, value):
+        return self._setter('y', value)
+
+    y = property(_get_y, _set_y, doc="Coordinate in 'y' dimension.")
+
+    def _get_z(self):
+        return self._getter('z')
+
+    def _set_z(self, value):
+        return self._setter('z', value)
+
+    z = property(_get_z, _set_z, doc="Coordinate in 'z' dimension.")
+
+    def _get_coords(self):
+        return array((self.x, self.y, self.z))
+
+    def _set_coords(self, value):
+        self.x, self.y, self.z = value
+
+    coords = property(_get_coords, _set_coords, doc="Array of (x, y, z) coordinates.")
