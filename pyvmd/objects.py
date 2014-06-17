@@ -178,3 +178,96 @@ class Molecule(object):
         VMD.molecule.rename(self.molid, name)
 
     name = property(_get_name, _set_name, doc="Molecule's name")
+
+
+class _MoleculeManager(object):
+    """
+    Manager of all molecules.
+    """
+    def __init__(self):
+        self._names = {}
+        # Fill the cache
+        self._update()
+
+    def _update(self):
+        # Update the name cache
+        cache = {}
+        for molid in VMD.molecule.listall():
+            name = VMD.molecule.name(molid)
+            cache.setdefault(name, molid)
+        self._names = cache
+
+    def __len__(self):
+        return VMD.molecule.num()
+
+    def __getitem__(self, key):
+        """
+        Returns molecule specified by name or molid.
+
+        If name is not unique, the molecule returned is not defined.
+
+        @type key: int or str
+        @rtype: Molecule
+        """
+        if isinstance(key, int):
+            assert key >= 0
+            if VMD.molecule.exists(key):
+                return Molecule(key)
+            else:
+                raise ValueError("Molecule %d doesn't exist." % key)
+        elif isinstance(key, basestring):
+            # First check the cached names
+            if key in self._names:
+                molid = self._names[key]
+                if VMD.molecule.exists(molid):
+                    return Molecule(molid)
+                else:
+                    # The record in cache is obsolete
+                    del self._names[key]
+
+            # No luck so far, update the cache
+            self._update()
+
+            if key in self._names:
+                # We found it after update. Do not check the existence again, we just updated the cache.
+                return Molecule(self._names[key])
+            else:
+                raise ValueError("Molecule '%s' doesn't exist." % key)
+        else:
+            raise TypeError("%s indices must be integers or strings, not %s" % (type(self), type(key)))
+
+    def __delitem__(self, key):
+        """
+        Deletes molecule specified by name or molid.
+
+        If name is not unique, the molecule deleted is not defined.
+
+        @type key: int or str
+        """
+        # Use __getitem__ to find out which molecule is to be deleted.
+        molecule = self.__getitem__(key)
+        # Clean the cache
+        self._names.pop(molecule.name)
+        # Delete molecule
+        VMD.molecule.delete(molecule.molid)
+
+    def __iter__(self):
+        for molid in VMD.molecule.listall():
+            yield Molecule(molid)
+
+    def __contains__(self, molecule):
+        return VMD.molecule.exists(molecule.molid)
+
+    def _get_top(self):
+        #XXX: Check if there is a molecule. `get_top` returns 0 even if there are no molecules.
+        if not VMD.molecule.num():
+            raise AttributeError("There are no molecules.")
+        return Molecule(VMD.molecule.get_top())
+
+    def _set_top(self, molecule):
+        VMD.molecule.set_top(molecule.molid)
+
+    top = property(_get_top, _set_top, doc="Top molecule")
+
+
+MOLECULES = _MoleculeManager()

@@ -6,7 +6,7 @@ import unittest
 from Molecule import Molecule as _Molecule
 import VMD
 
-from pyvmd.objects import Molecule, FORMAT_PDB
+from pyvmd.objects import Molecule, _MoleculeManager, FORMAT_PDB
 from .utils import data
 
 
@@ -170,3 +170,101 @@ class TestMolecule(unittest.TestCase):
         # Invalid key for slice
         with self.assertRaises(TypeError):
             del mol.frames[None]
+
+
+class TestMoleculeManager(unittest.TestCase):
+    """
+    Test `_MoleculeManager` class.
+    """
+    def test_no_molecules(self):
+        man = _MoleculeManager()
+
+        self.assertEqual(len(man), 0)
+        with self.assertRaises(ValueError):
+            man[0]
+        with self.assertRaises(ValueError):
+            man['molecule']
+        with self.assertRaises(TypeError):
+            man[None]
+        with self.assertRaises(ValueError):
+            del man[0]
+        with self.assertRaises(ValueError):
+            del man['molecule']
+        self.assertEqual(list(man), [])
+        with self.assertRaises(AttributeError):
+            man.top
+
+    def test_molecules(self):
+        mol1 = Molecule(VMD.molecule.new('Mine'))
+        mol2 = Molecule(VMD.molecule.new('Other'))
+        VMD.molecule.set_top(mol1.molid)
+        man = _MoleculeManager()
+
+        self.assertEqual(len(man), 2)
+        self.assertEqual(man[mol1.molid], mol1)
+        self.assertEqual(man['Mine'], mol1)
+        self.assertEqual(man[mol2.molid], mol2)
+        self.assertEqual(man['Other'], mol2)
+        self.assertEqual(list(man), [mol1, mol2])
+        self.assertIn(mol1, man)
+        self.assertIn(mol2, man)
+        # Check top property
+        self.assertEqual(man.top, mol1)
+        man.top = mol2
+        self.assertEqual(VMD.molecule.get_top(), mol2.molid)
+        self.assertEqual(man.top, mol2)
+
+        # Try deletion - using name
+        del man['Mine']
+        self.assertFalse(VMD.molecule.exists(mol1.molid))
+        # Check the other attributes
+        self.assertEqual(len(man), 1)
+        with self.assertRaises(ValueError):
+            man[mol1.molid]
+        with self.assertRaises(ValueError):
+            man['Mine']
+        self.assertEqual(man[mol2.molid], mol2)
+        self.assertEqual(man['Other'], mol2)
+        self.assertEqual(list(man), [mol2])
+        self.assertNotIn(mol1, man)
+        self.assertIn(mol2, man)
+
+        # Try deletion - using molid
+        del man[mol2.molid]
+        self.assertFalse(VMD.molecule.exists(mol2.molid))
+        # Check the other attributes
+        self.assertEqual(len(man), 0)
+        with self.assertRaises(ValueError):
+            man[mol2.molid]
+        with self.assertRaises(ValueError):
+            man['Other']
+        self.assertEqual(list(man), [])
+        self.assertNotIn(mol1, man)
+        self.assertNotIn(mol2, man)
+
+        # Check second deletions raises ValueError
+        with self.assertRaises(ValueError):
+            del man[mol1.molid]
+        with self.assertRaises(ValueError):
+            del man[mol2.molid]
+        with self.assertRaises(ValueError):
+            del man['Mine']
+        with self.assertRaises(ValueError):
+            del man['Other']
+
+    def test_remote_actions(self):
+        # Test manager can cope with molecule changes which happen without its knowledge
+        man = _MoleculeManager()
+
+        # Create a molecule
+        mol1 = Molecule(VMD.molecule.new('Unique'))
+
+        # Manager finds it exists and adds it into name cache
+        self.assertEqual(man['Unique'], mol1)
+
+        # Delete the molecule and create other with the same name
+        VMD.molecule.delete(mol1.molid)
+        mol2 = Molecule(VMD.molecule.new('Unique'))
+
+        # Manager correctly returns the new molecule
+        self.assertEqual(man['Unique'], mol2)
