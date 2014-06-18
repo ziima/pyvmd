@@ -6,8 +6,9 @@ import logging
 import os.path
 
 from numpy import array
+from atomsel import atomsel as _atomsel
 from Molecule import Molecule as _Molecule
-import VMD
+from VMD import molecule as _molecule
 
 
 LOGGER = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ class Frames(object):
         self.molecule = molecule
 
     def __len__(self):
-        return VMD.molecule.numframes(self.molecule.molid)
+        return _molecule.numframes(self.molecule.molid)
 
     def __delitem__(self, key):
         #XXX: For some reason, 'skip' in the 'delframe' function means which frames are left when deleting
@@ -71,7 +72,7 @@ class Frames(object):
 
         for frame in frames:
             LOGGER.debug("Deleting frame %d", frame)
-            VMD.molecule.delframe(self.molecule.molid, beg=frame, end=frame)
+            _molecule.delframe(self.molecule.molid, beg=frame, end=frame)
 
     def __iter__(self):
         # Return the iterator over frames
@@ -85,7 +86,7 @@ class Frames(object):
             frame = self.molecule.frame
         else:
             assert isinstance(frame, int) and frame >= 0
-        VMD.molecule.dupframe(self.molecule.molid, frame)
+        _molecule.dupframe(self.molecule.molid, frame)
 
 
 class Molecule(object):
@@ -101,7 +102,7 @@ class Molecule(object):
         @param molid: Molecule ID
         """
         assert isinstance(molid, int) and molid >= 0
-        if not VMD.molecule.exists(molid):
+        if not _molecule.exists(molid):
             raise ValueError("Molecule %d does not exist." % molid)
         self.molid = molid
         self._molecule = None
@@ -122,14 +123,14 @@ class Molecule(object):
 
         @name: Name of the molecule.
         """
-        molid = VMD.molecule.new(name or 'molecule')
+        molid = _molecule.new(name or 'molecule')
         return cls(molid)
 
     def delete(self):
         """
         Deletes the molecule.
         """
-        VMD.molecule.delete(self.molid)
+        _molecule.delete(self.molid)
 
     def load(self, filename, filetype=None, start=0, stop=-1, step=1, wait=True, volsets=None):
         """
@@ -148,8 +149,8 @@ class Molecule(object):
                 raise ValueError("Cannot detect filetype for '%s'" % filename)
         waitfor = wait and -1 or 0
         volsets = volsets or []
-        VMD.molecule.read(self.molid, filetype, filename, beg=start, end=stop, skip=step, waitfor=waitfor,
-                          volsets=volsets)
+        _molecule.read(self.molid, filetype, filename, beg=start, end=stop, skip=step, waitfor=waitfor,
+                       volsets=volsets)
 
     @property
     def molecule(self):
@@ -159,11 +160,11 @@ class Molecule(object):
         return _Molecule(id=self.molid)
 
     def _get_frame(self):
-        return VMD.molecule.get_frame(self.molid)
+        return _molecule.get_frame(self.molid)
 
     def _set_frame(self, frame):
         assert isinstance(frame, int) and frame >= 0
-        VMD.molecule.set_frame(self.molid, frame)
+        _molecule.set_frame(self.molid, frame)
 
     frame = property(_get_frame, _set_frame, doc="Molecule's frame")
 
@@ -175,10 +176,10 @@ class Molecule(object):
         return Frames(self)
 
     def _get_name(self):
-        return VMD.molecule.name(self.molid)
+        return _molecule.name(self.molid)
 
     def _set_name(self, name):
-        VMD.molecule.rename(self.molid, name)
+        _molecule.rename(self.molid, name)
 
     name = property(_get_name, _set_name, doc="Molecule's name")
 
@@ -195,13 +196,13 @@ class _MoleculeManager(object):
     def _update(self):
         # Update the name cache
         cache = {}
-        for molid in VMD.molecule.listall():
-            name = VMD.molecule.name(molid)
+        for molid in _molecule.listall():
+            name = _molecule.name(molid)
             cache.setdefault(name, molid)
         self._names = cache
 
     def __len__(self):
-        return VMD.molecule.num()
+        return _molecule.num()
 
     def __getitem__(self, key):
         """
@@ -214,7 +215,7 @@ class _MoleculeManager(object):
         """
         if isinstance(key, int):
             assert key >= 0
-            if VMD.molecule.exists(key):
+            if _molecule.exists(key):
                 return Molecule(key)
             else:
                 raise ValueError("Molecule %d doesn't exist." % key)
@@ -222,7 +223,7 @@ class _MoleculeManager(object):
             # First check the cached names
             if key in self._names:
                 molid = self._names[key]
-                if VMD.molecule.exists(molid):
+                if _molecule.exists(molid):
                     return Molecule(molid)
                 else:
                     # The record in cache is obsolete
@@ -252,23 +253,23 @@ class _MoleculeManager(object):
         # Clean the cache
         self._names.pop(molecule.name)
         # Delete molecule
-        VMD.molecule.delete(molecule.molid)
+        _molecule.delete(molecule.molid)
 
     def __iter__(self):
-        for molid in VMD.molecule.listall():
+        for molid in _molecule.listall():
             yield Molecule(molid)
 
     def __contains__(self, molecule):
-        return VMD.molecule.exists(molecule.molid)
+        return _molecule.exists(molecule.molid)
 
     def _get_top(self):
         #XXX: Check if there is a molecule. `get_top` returns 0 even if there are no molecules.
-        if not VMD.molecule.num():
+        if not _molecule.num():
             raise AttributeError("There are no molecules.")
-        return Molecule(VMD.molecule.get_top())
+        return Molecule(_molecule.get_top())
 
     def _set_top(self, molecule):
-        VMD.molecule.set_top(molecule.molid)
+        _molecule.set_top(molecule.molid)
 
     top = property(_get_top, _set_top, doc="Top molecule")
 
@@ -284,6 +285,9 @@ class SelectionBase(object):
     """
     Base class for selection-like objects.
     """
+    # Large amounts of these objects can be created, slots has some performance benefits.
+    __slots__ = ['_molecule', '_frame', '_atomsel']
+
     def __init__(self, molecule=None, frame=NOW):
         """
         Creates selection-like object.
@@ -338,7 +342,16 @@ class Selection(SelectionBase):
         super(Selection, self).__init__(molecule=molecule, frame=frame)
         self._selection = selection
         # No need to delay creation of the atomsel. This also checks if the selection text makes sense.
-        self._atomsel = VMD.atomsel.atomsel(selection, frame=frame, molid=self._molecule.molid)
+        self._atomsel = _atomsel(selection, frame=frame, molid=self._molecule.molid)
+        # _update_frame is the frame that have been used to filter coordinate based selection in last update.
+        self._update_frame = self._get_active_frame()
+
+    def _get_active_frame(self):
+        # Return which frame is used to filter coordinate based selection.
+        if self._frame == NOW:
+            return self._molecule.frame
+        else:
+            return self._frame
 
     def __repr__(self):
         return "<%s: '%s' of '%r' at %d>" % (type(self).__name__, self._selection, self._molecule, self._frame)
@@ -364,8 +377,11 @@ class Selection(SelectionBase):
         """
         Returns respective 'VMD.atomsel' instance.
         """
-        # Selection can be coordinate-based. Update before return.
-        self._atomsel.update()
+        active_frame = self._get_active_frame()
+        # Selection can be coordinate-based. If update frame and active frame differ, update selection.
+        if active_frame != self._update_frame:
+            self._atomsel.update()
+            self._update_frame = active_frame
         return self._atomsel
 
     ############################################################################
@@ -387,6 +403,9 @@ class Atom(SelectionBase):
 
     This class is a proxy to a atom in molecule loaded into VMD.
     """
+    # Large amounts of atoms can be created, slots has some performance benefits.
+    __slots__ = SelectionBase.__slots__ + ['_index']
+
     def __init__(self, index, molecule=None, frame=NOW):
         """
         Creates atom representation.
@@ -400,7 +419,7 @@ class Atom(SelectionBase):
         assert isinstance(index, int) and index >= 0
         super(Atom, self).__init__(molecule=molecule, frame=frame)
         # Check if index makes sense
-        if index >= VMD.molecule.numatoms(self._molecule.molid):
+        if index >= _molecule.numatoms(self._molecule.molid):
             raise ValueError("Atom %d doesn't exist in '%s' at %s" % (index, self._molecule, frame))
         self._index = index
 
@@ -431,7 +450,7 @@ class Atom(SelectionBase):
             assert isinstance(molecule, Molecule)
         assert frame == NOW or (isinstance(frame, int) and frame >= 0)
 
-        sel = VMD.atomsel.atomsel(selection, frame=frame, molid=molecule.molid)
+        sel = _atomsel(selection, frame=frame, molid=molecule.molid)
         if len(sel) != 1:
             raise ValueError("Selection '%s' doesn't define single atom in '%s' at %s" % (selection, molecule, frame))
         self = cls(sel.get('index')[0], molecule, frame)
@@ -450,7 +469,7 @@ class Atom(SelectionBase):
         Returns respective 'VMD.atomsel' instance.
         """
         if self._atomsel is None:
-            self._atomsel = VMD.atomsel.atomsel('index %d' % self._index, frame=self._frame, molid=self._molecule.molid)
+            self._atomsel = _atomsel('index %d' % self._index, frame=self._frame, molid=self._molecule.molid)
         return self._atomsel
 
     ############################################################################
@@ -488,7 +507,9 @@ class Atom(SelectionBase):
     z = property(_get_z, _set_z, doc="Coordinate in 'z' dimension.")
 
     def _get_coords(self):
-        return array((self.x, self.y, self.z))
+        #XXX: This is unintuitive, but very fast. The atom's center is the location of the atom.
+        # Apparently getting the coordinates all at once has lower overhead than underlying conputation of the center.
+        return array(self.atomsel.center())
 
     def _set_coords(self, value):
         self.x, self.y, self.z = value
