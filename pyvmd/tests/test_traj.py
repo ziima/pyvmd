@@ -32,7 +32,7 @@ class TestLoader(unittest.TestCase):
 
         # Callback to collect data
         def _get_x(status):
-            x_coords.append(VMD.atomsel.atomsel('index 0', molid=status.molecule.id).get('x')[0])
+            x_coords.append(VMD.atomsel.atomsel('index 0', molid=status.molecule.molid).get('x')[0])
 
         loader = Loader(data('water.psf'), [data('water.1.dcd'), data('water.2.dcd')])
         loader.add_callback(_get_status)

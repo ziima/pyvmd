@@ -5,10 +5,9 @@ import os
 from tempfile import mkstemp
 import unittest
 
-from Molecule import Molecule
-
-from pyvmd.traj import Loader
 from pyvmd.collectors import RMSDCollector
+from pyvmd.objects import Molecule
+from pyvmd.traj import Loader
 
 from .utils import data
 
@@ -27,7 +26,7 @@ class TestRMSDCollector(unittest.TestCase):
     def test_rmsd(self):
         # Test RMSD collector returns correct results
         # Set up the reference, collector and loader
-        ref = Molecule()
+        ref = Molecule.create()
         ref.load(data('water.psf'))
         ref.load(data('water.pdb'))
         rmsd = RMSDCollector(ref, self.tmpfile)
@@ -42,7 +41,7 @@ class TestRMSDCollector(unittest.TestCase):
         self.assertEqual(open(self.tmpfile).read(), open(data('rmsd.dat')).read())
 
     def test_invalid_names(self):
-        ref = Molecule()
+        ref = Molecule.create()
         rmsd = RMSDCollector(ref, self.tmpfile)
         rmsd.add_selection('all', 'unique')
         self.assertRaises(ValueError, rmsd.add_selection, 'noh', 'unique')

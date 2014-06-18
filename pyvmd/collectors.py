@@ -6,6 +6,8 @@ import logging
 
 import VMD
 
+from .objects import Molecule
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -103,6 +105,7 @@ class RMSDCollector(DataCollector):
         @type reference: Molecule
         @param output: Output filename
         """
+        assert isinstance(reference, Molecule)
         super(RMSDCollector, self).__init__(output)
         self.reference = reference
 
@@ -112,18 +115,18 @@ class RMSDCollector(DataCollector):
 
         data = []
         # Current frame number
-        cur_frame = status.molecule.curFrame()
+        cur_frame = status.molecule.frame
         # Duplicate the trajectory frame because we will modify the coordinates
         # This also sets the molecule to the duplicated frame
-        status.molecule.dupFrame()
+        status.molecule.frames.copy()
         # Duplicated frame number
-        dup_frame = status.molecule.curFrame()
+        dup_frame = status.molecule.frame
 
-        whole = VMD.atomsel.atomsel('all', molid=status.molecule.id)
+        whole = VMD.atomsel.atomsel('all', molid=status.molecule.molid)
 
         for dataset in self._datasets:
-            ref = VMD.atomsel.atomsel(dataset.selection, frame=self.reference.curFrame(), molid=self.reference.id)
-            sel = VMD.atomsel.atomsel(dataset.selection, molid=status.molecule.id)
+            ref = VMD.atomsel.atomsel(dataset.selection, frame=self.reference.frame, molid=self.reference.molid)
+            sel = VMD.atomsel.atomsel(dataset.selection, molid=status.molecule.molid)
 
             # Align coordinates to the reference
             whole.move(sel.fit(ref))
@@ -132,8 +135,8 @@ class RMSDCollector(DataCollector):
             data.append(sel.rmsd(ref))
 
         # Delete the duplicated frame and reset trajectory frame
-        status.molecule.delFrame(first=dup_frame, last=dup_frame)
-        status.molecule.setFrame(cur_frame)
+        del status.molecule.frames[dup_frame]
+        status.molecule.frame = cur_frame
 
         # Write the data
         self._write_data(status.frame, data)

@@ -3,7 +3,7 @@ Trajectory analysis utilities
 """
 import logging
 
-from Molecule import Molecule
+from .objects import Molecule
 
 
 LOGGER = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class LoadStatus(object):
         """
         self.frame += 1
         self._chunk_frame += 1
-        self.molecule.setFrame(self._chunk_frame)
+        self.molecule.frame = self._chunk_frame
 
 
 class Loader(object):
@@ -55,7 +55,7 @@ class Loader(object):
         @param step: Number of frames to load at once
         """
         assert step > 0, "Number of steps must be possitive"
-        self.molecule = Molecule()
+        self.molecule = Molecule.create('Loader')
         self.molecule.load(parm_file)
         self.traj_files = traj_files
         self.step = step
@@ -84,8 +84,8 @@ class Loader(object):
                 # Load 'step' frames
                 stop = start + self.step - 1
                 LOGGER.debug('Loading %s from %d to %d', filename, start, stop)
-                self.molecule.load(filename, first=start, last=stop)
-                loaded = self.molecule.numFrames()
+                self.molecule.load(filename, start=start, stop=stop)
+                loaded = len(self.molecule.frames)
                 if not loaded:
                     # No frames were loaded
                     break
@@ -97,8 +97,8 @@ class Loader(object):
                     for callback in self._callbacks:
                         callback(status)
 
-                # Prepare for next iteration
-                self.molecule.delFrame()
+                # Prepare for next iteration - delete all frames
+                del self.molecule.frames[:]
                 if loaded < self.step:
                     # Nothing else to be loaded for this filename
                     break
