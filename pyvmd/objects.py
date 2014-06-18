@@ -1,6 +1,7 @@
 """
 High level interface to the VMD objects.
 """
+import itertools
 import logging
 import os.path
 
@@ -105,6 +106,9 @@ class Molecule(object):
         self.molid = molid
         self._molecule = None
 
+    def __repr__(self):
+        return "<%s: %s(%d)>" % (type(self).__name__, self.name, self.molid)
+
     def __eq__(self, other):
         return type(self) == type(other) and self.molid == other.molid
 
@@ -152,9 +156,7 @@ class Molecule(object):
         """
         Returns respective VMD.Molecule instance.
         """
-        if self._molecule is None:
-            self._molecule = _Molecule(id=self.molid)
-        return self._molecule
+        return _Molecule(id=self.molid)
 
     def _get_frame(self):
         return VMD.molecule.get_frame(self.molid)
@@ -278,7 +280,108 @@ MOLECULES = _MoleculeManager()
 NOW = -1
 
 
-class Atom(object):
+class SelectionBase(object):
+    """
+    Base class for selection-like objects.
+    """
+    def __init__(self, molecule=None, frame=NOW):
+        """
+        Creates selection-like object.
+
+        @param molecule: Molecule to select from. Top if not provider.
+        @type molecule: Molecule or None
+        @param frame: Selection frame
+        @type frame: Non-negative integer or NOW
+        """
+        if molecule is None:
+            molecule = MOLECULES.top
+        else:
+            assert isinstance(molecule, Molecule)
+        assert frame == NOW or (isinstance(frame, int) and frame >= 0)
+        self._molecule = molecule
+        self._frame = frame
+        self._atomsel = None
+
+    @property
+    def molecule(self):
+        "Molecule"
+        return self._molecule
+
+    def _get_frame(self):
+        return self._frame
+
+    def _set_frame(self, frame):
+        assert frame == NOW or (isinstance(frame, int) and frame >= 0)
+        self._atomsel.frame = frame
+        self._frame = frame
+
+    frame = property(_get_frame, _set_frame, doc="Frame")
+
+
+class Selection(SelectionBase):
+    """
+    Selection of atoms.
+
+    This class is a proxy to a selection in VMD.
+    Coordinate based selections are automatically updated.
+    """
+    def __init__(self, selection, molecule=None, frame=NOW):
+        """
+        Creates selection.
+
+        @param selection: Selection text
+        @param molecule: Molecule to select from. Top if not provider.
+        @type molecule: Molecule or None
+        @param frame: Selection frame
+        @type frame: Non-negative integer or NOW
+        """
+        super(Selection, self).__init__(molecule=molecule, frame=frame)
+        self._selection = selection
+        # No need to delay creation of the atomsel. This also checks if the selection text makes sense.
+        self._atomsel = VMD.atomsel.atomsel(selection, frame=frame, molid=self._molecule.molid)
+
+    def __repr__(self):
+        return "<%s: '%s' of '%r' at %d>" % (type(self).__name__, self._selection, self._molecule, self._frame)
+
+    def __len__(self):
+        return len(self.atomsel)
+
+    def __iter__(self):
+        for index in self.atomsel.get('index'):
+            yield Atom(index, self._molecule, self._frame)
+
+    def __contains__(self, atom):
+        assert isinstance(atom, Atom)
+        return atom.index in self.atomsel.get('index')
+
+    @property
+    def selection(self):
+        "Selection text"
+        return self._selection
+
+    @property
+    def atomsel(self):
+        """
+        Returns respective 'VMD.atomsel' instance.
+        """
+        # Selection can be coordinate-based. Update before return.
+        self._atomsel.update()
+        return self._atomsel
+
+    ############################################################################
+    # Useful methods
+    def contacts(self, other, distance):
+        """
+        Returns iterator of atom pairs which are closer than distance.
+        """
+        assert isinstance(other, Selection)
+        assert isinstance(distance, (int, float, long)) and distance >= 0
+        atoms_self, atoms_other = self.atomsel.contacts(other.atomsel, distance)
+        return ((Atom(a, self._molecule, self._frame), Atom(b, other.molecule, other.frame))
+                for a, b in itertools.izip(atoms_self, atoms_other))
+
+
+class Atom(SelectionBase):
     """
     Atom representation.
 
@@ -289,27 +392,27 @@ class Atom(object):
         Creates atom representation.
 
         @param index: Index of the atom
-        @param molecule: Atom's molecule
-        @type molecule: Molecule
+        @param molecule: Atom's molecule. Top if not provider.
+        @type molecule: Molecule or None
         @param frame: Atom's frame
         @type frame: Non-negative integer or NOW
         """
         assert isinstance(index, int) and index >= 0
-        if molecule is None:
-            molecule = MOLECULES.top
-        else:
-            assert isinstance(molecule, Molecule)
-        assert frame == NOW or (isinstance(frame, int) and frame >= 0)
+        super(Atom, self).__init__(molecule=molecule, frame=frame)
         # Check if index makes sense
-        if index >= VMD.molecule.numatoms(molecule.molid):
-            raise ValueError("Atom %d doesn't exist in '%s' at %s" % (index, molecule, frame))
-        self.index = index
-        self._molecule = molecule
-        self._frame = frame
-        self._atomsel = None
+        if index >= VMD.molecule.numatoms(self._molecule.molid):
+            raise ValueError("Atom %d doesn't exist in '%s' at %s" % (index, self._molecule, frame))
+        self._index = index
 
     def __repr__(self):
-        return '<%s: %d of %d at %d>' % (type(self).__name__, self.index, self._molecule.molid, self._frame)
+        return "<%s: %d of '%r' at %d>" % (type(self).__name__, self._index, self._molecule, self._frame)
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self._index == other.index and self._molecule == other.molecule and \
+            self._frame == other.frame
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     @classmethod
     def pick(cls, selection, molecule=None, frame=NOW):
@@ -337,18 +440,9 @@ class Atom(object):
         return self
 
     @property
-    def molecule(self):
-        "Molecule"
-        return self._molecule
-
-    def _get_frame(self):
-        return self._frame
-
-    def _set_frame(self, frame):
-        self._atomsel.frame = frame
-        self._frame = frame
-
-    frame = property(_get_frame, _set_frame, doc="Frame")
+    def index(self):
+        "Index"
+        return self._index
 
     @property
     def atomsel(self):
@@ -356,7 +450,7 @@ class Atom(object):
         Returns respective 'VMD.atomsel' instance.
         """
         if self._atomsel is None:
-            self._atomsel = VMD.atomsel.atomsel('index %d' % self.index, frame=self._frame, molid=self._molecule.molid)
+            self._atomsel = VMD.atomsel.atomsel('index %d' % self._index, frame=self._frame, molid=self._molecule.molid)
         return self._atomsel
 
     ############################################################################

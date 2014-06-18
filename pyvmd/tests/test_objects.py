@@ -7,7 +7,7 @@ from numpy import ndarray
 from Molecule import Molecule as _Molecule
 import VMD
 
-from pyvmd.objects import Atom, Molecule, _MoleculeManager, FORMAT_PDB, NOW
+from pyvmd.objects import Atom, Molecule, _MoleculeManager, Selection, FORMAT_PDB, NOW
 from .utils import data
 
 
@@ -319,6 +319,19 @@ class TestAtom(unittest.TestCase):
         self.assertAlmostEqual(atom.z, 17.85, places=6)
         self.assertEqual(list(atom.coords), [-90.55999755859375, 42, 17.850000381469727])
 
+    def test_atom_comparison(self):
+        # Test molecule comparison
+        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol = Molecule(molid)
+        atom1 = Atom(0)
+        atom2 = Atom(0)
+        other = Atom(1)
+
+        self.assertEqual(atom1, atom1)
+        self.assertEqual(atom1, atom2)
+        self.assertNotEqual(atom1, other)
+        self.assertNotEqual(atom2, other)
+
     def test_frame_property(self):
         # Test frame property works correctly
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
@@ -387,3 +400,80 @@ class TestAtom(unittest.TestCase):
             Atom.pick('all')
         with self.assertRaises(ValueError):
             Atom.pick('none')
+
+
+class TestSelection(unittest.TestCase):
+    """
+    Test `Selection` class.
+    """
+    def tearDown(self):
+        # Delete all molecules
+        for molid in VMD.molecule.listall():
+            VMD.molecule.delete(molid)
+
+    def test_properties(self):
+        # Test basic properties
+        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol = Molecule(molid)
+
+        sel = Selection('resid 1 to 3')
+        # Test getters
+        self.assertEqual(sel.selection, 'resid 1 to 3')
+        self.assertEqual(sel.molecule, mol)
+        self.assertEqual(sel.frame, NOW)
+        # Test container methods
+        self.assertEqual(len(sel), 9)
+        self.assertEqual(list(sel), [Atom(0), Atom(1), Atom(2), Atom(3), Atom(4), Atom(5), Atom(6), Atom(7), Atom(8)])
+        self.assertIn(Atom(0), sel)
+        self.assertIn(Atom(5), sel)
+        self.assertNotIn(Atom(9), sel)
+        self.assertNotIn(Atom(15), sel)
+
+        # Test empty selection
+        sel = Selection('none')
+        self.assertEqual(sel.selection, 'none')
+        self.assertEqual(sel.molecule, mol)
+        self.assertEqual(sel.frame, NOW)
+        # Test container methods
+        self.assertEqual(len(sel), 0)
+        self.assertEqual(list(sel), [])
+        self.assertNotIn(Atom(0), sel)
+        self.assertNotIn(Atom(5), sel)
+
+    def test_frame_property(self):
+        # Test frame property works correctly
+        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        VMD.molecule.read(molid, 'dcd', data('water.1.dcd'), waitfor=-1)
+        mol = Molecule(molid)
+
+        # Create selection linked to the molecule frame
+        sel = Selection('x < -1.4')
+        self.assertEqual(list(sel), [Atom(9), Atom(18), Atom(19), Atom(20)])
+        # Change the molecule frame, the selection should follow
+        mol.frame = 0
+        self.assertEqual(list(sel), [Atom(0), Atom(1), Atom(9), Atom(10), Atom(18), Atom(19), Atom(20)])
+        mol.frame = 4
+        self.assertEqual(list(sel), [Atom(0), Atom(1), Atom(9), Atom(18), Atom(19), Atom(20)])
+
+        # Define the selection's frame
+        sel.frame = 9
+        self.assertEqual(list(sel), [Atom(0, frame=9), Atom(1, frame=9), Atom(9, frame=9), Atom(18, frame=9), Atom(19, frame=9), Atom(20, frame=9)])
+        # Change the molecule frame, the selection keeps its frame
+        mol.frame = 11
+        self.assertEqual(list(sel), [Atom(0, frame=9), Atom(1, frame=9), Atom(9, frame=9), Atom(18, frame=9), Atom(19, frame=9), Atom(20, frame=9)])
+
+        # Set the selection's frame back to the molecule's frame
+        sel.frame = NOW
+        self.assertEqual(list(sel), [Atom(9), Atom(18), Atom(19), Atom(20)])
+
+    def test_contacts(self):
+        # Test `contacts` method
+        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol = Molecule(molid)
+
+        sel1 = Selection('resid 1 to 3 and noh')
+        sel2 = Selection('hydrogen')
+
+        self.assertEqual(list(sel1.contacts(sel2, 1.0)), [])
+        self.assertEqual(list(sel1.contacts(sel2, 2.0)), [(Atom(6), Atom(11))])
+        self.assertEqual(list(sel2.contacts(sel1, 2.0)), [(Atom(11), Atom(6))])
