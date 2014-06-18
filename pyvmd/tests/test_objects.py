@@ -294,6 +294,7 @@ class TestAtom(unittest.TestCase):
         self.assertAlmostEqual(atom.z, 1.280)
         self.assertIsInstance(atom.coords, ndarray)
         self.assertEqual(list(atom.coords), [-1.4930000305175781, 1.8999999761581421, 1.2799999713897705])
+        self.assertEqual(list(atom.bonded), [Atom(1), Atom(2)])
         # Test setters
         atom.x = 23.9
         atom.y = -200.45
@@ -308,7 +309,7 @@ class TestAtom(unittest.TestCase):
         self.assertAlmostEqual(atom.z, 0)
         self.assertEqual(list(atom.coords), [23.899999618530273, -200.4499969482422, 0])
 
-        # Set all coordinates
+        # Set complete coordinates
         atom.coords = (-90.56, 42, 17.85)
         self.assertEqual(sel.get('x'), [-90.55999755859375])
         self.assertEqual(sel.get('y'), [42])

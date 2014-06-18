@@ -312,7 +312,7 @@ class SelectionBase(object):
 
     def _set_frame(self, frame):
         assert frame == NOW or (isinstance(frame, int) and frame >= 0)
-        self._atomsel.frame = frame
+        self.atomsel.frame = frame
         self._frame = frame
 
     frame = property(_get_frame, _set_frame, doc="Frame")
@@ -347,12 +347,12 @@ class Selection(SelectionBase):
         return len(self.atomsel)
 
     def __iter__(self):
-        for index in self.atomsel.get('index'):
+        for index in self.atomsel:
             yield Atom(index, self._molecule, self._frame)
 
     def __contains__(self, atom):
         assert isinstance(atom, Atom)
-        return atom.index in self.atomsel.get('index')
+        return self.atomsel[atom.index]
 
     @property
     def selection(self):
@@ -494,3 +494,10 @@ class Atom(SelectionBase):
         self.x, self.y, self.z = value
 
     coords = property(_get_coords, _set_coords, doc="Array of (x, y, z) coordinates.")
+
+    @property
+    def bonded(self):
+        """
+        Returns iterator over Atoms bonded to this one.
+        """
+        return (Atom(i, self._molecule, self._frame) for i in self.atomsel.bonds[0])
