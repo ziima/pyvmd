@@ -48,17 +48,20 @@ class Loader(object):
     """
     Iteratively loads the trajectory files.
     """
-    def __init__(self, parm_file, traj_files, step=10):
+    def __init__(self, molecule, traj_files, step=1, chunk=10):
         """
-        @param parm_file: Structure file
+        @param molecule: Molecule used for loading the trajectory.
         @param traj_files: List of trajectory files
-        @param step: Number of frames to load at once
+        @param step: Load every 'step'th frame from trajectory.
+        @param chunk: Number of frames to load at once
         """
-        assert step > 0, "Number of steps must be possitive"
-        self.molecule = Molecule.create('Loader')
-        self.molecule.load(parm_file)
+        assert isinstance(molecule, Molecule)
+        assert isinstance(step, (int, long)) and step > 0, "step must be possitive integer"
+        assert isinstance(chunk, (int, long)) and chunk > 0, "chunk must be possitive integer"
+        self.molecule = molecule
         self.traj_files = traj_files
         self.step = step
+        self.chunk = chunk
         self._callbacks = []
 
     def add_callback(self, callback):
@@ -77,14 +80,17 @@ class Loader(object):
         """
         Run the trajectory.
         """
+        # Clear the molecule frames
+        del self.molecule.frames[:]
+
         status = LoadStatus(self.molecule)
         for filename in self.traj_files:
             start = 0
             while True:
-                # Load 'step' frames
-                stop = start + self.step - 1
-                LOGGER.debug('Loading %s from %d to %d', filename, start, stop)
-                self.molecule.load(filename, start=start, stop=stop)
+                # Load 'chunk' frames
+                stop = start + self.step * self.chunk - 1
+                LOGGER.debug('Loading %s from %d to %d, every %d', filename, start, stop, self.step)
+                self.molecule.load(filename, start=start, stop=stop, step=self.step)
                 loaded = len(self.molecule.frames)
                 if not loaded:
                     # No frames were loaded
@@ -100,8 +106,8 @@ class Loader(object):
 
                 # Prepare for next iteration - delete all frames
                 del self.molecule.frames[:]
-                if loaded < self.step:
+                if loaded < self.chunk:
                     # Nothing else to be loaded for this filename
                     break
-                start += self.step
+                start += self.step * self.chunk
         LOGGER.info('Analyzed %s frames.', status.frame + 1)
