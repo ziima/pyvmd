@@ -10,6 +10,9 @@ from atomsel import atomsel as _atomsel
 from Molecule import Molecule as _Molecule
 from VMD import molecule as _molecule
 
+__all__ = ['Atom', 'Frames', 'Molecule', 'MoleculeManager', 'Selection', 'FORMAT_DCD', 'FORMAT_PDB', 'FORMAT_PSF',
+           'FORMATS', 'MOLECULES', 'NOW']
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -184,7 +187,7 @@ class Molecule(object):
     name = property(_get_name, _set_name, doc="Molecule's name")
 
 
-class _MoleculeManager(object):
+class MoleculeManager(object):
     """
     Manager of all molecules.
     """
@@ -274,14 +277,14 @@ class _MoleculeManager(object):
     top = property(_get_top, _set_top, doc="Top molecule")
 
 
-MOLECULES = _MoleculeManager()
+MOLECULES = MoleculeManager()
 
 
 # Constant which always references active frame
 NOW = -1
 
 
-class SelectionBase(object):
+class SelectionMixin(object):
     """
     Base class for selection-like objects.
     """
@@ -322,7 +325,7 @@ class SelectionBase(object):
     frame = property(_get_frame, _set_frame, doc="Frame")
 
 
-class Selection(SelectionBase):
+class Selection(SelectionMixin):
     """
     Selection of atoms.
 
@@ -397,14 +400,14 @@ class Selection(SelectionBase):
                 for a, b in itertools.izip(atoms_self, atoms_other))
 
 
-class Atom(SelectionBase):
+class Atom(SelectionMixin):
     """
     Atom representation.
 
     This class is a proxy to a atom in molecule loaded into VMD.
     """
     # Large amounts of atoms can be created, slots has some performance benefits.
-    __slots__ = SelectionBase.__slots__ + ['_index']
+    __slots__ = SelectionMixin.__slots__ + ['_index']
 
     def __init__(self, index, molecule=None, frame=NOW):
         """
@@ -454,8 +457,6 @@ class Atom(SelectionBase):
         if len(sel) != 1:
             raise ValueError("Selection '%s' doesn't define single atom in '%s' at %s" % (selection, molecule, frame))
         self = cls(sel.get('index')[0], molecule, frame)
-        # Set the atomsel, so it does not have to be created again
-        self._atomsel = sel
         return self
 
     @property

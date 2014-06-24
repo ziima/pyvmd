@@ -1,27 +1,20 @@
 """
 Tests for measure.
 """
-import unittest
-
 import VMD
 
 from pyvmd.measure import distance, angle, dihedral, improper
 from pyvmd.objects import Atom
-from .utils import data
+from .utils import data, PyvmdTestCase
 
 
-class TestMeasure(unittest.TestCase):
+class TestMeasure(PyvmdTestCase):
     """
     Test measure utilities.
     """
     def setUp(self):
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
         self.molid = molid
-
-    def tearDown(self):
-        # Delete all molecules
-        for molid in VMD.molecule.listall():
-            VMD.molecule.delete(molid)
 
     def test_distance(self):
         # Test `distance` function

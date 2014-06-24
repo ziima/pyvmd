@@ -7,6 +7,8 @@ from numpy.linalg import norm
 
 from .objects import Atom
 
+__all__ = ['angle', 'dihedral', 'distance', 'improper']
+
 
 def _vector_angle(a, b):
     """

@@ -1,27 +1,20 @@
 """
 Tests for analysis.
 """
-import unittest
-
 import VMD
 
 from pyvmd.analysis import hydrogen_bonds, HydrogenBond
 from pyvmd.objects import Atom, Selection
-from .utils import data
+from .utils import data, PyvmdTestCase
 
 
-class TestAnalysis(unittest.TestCase):
+class TestAnalysis(PyvmdTestCase):
     """
     Test analysis utilities.
     """
     def setUp(self):
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
         self.molid = molid
-
-    def tearDown(self):
-        # Delete all molecules
-        for molid in VMD.molecule.listall():
-            VMD.molecule.delete(molid)
 
     def test_hydrogen_bonds(self):
         # Test `hydrogen_bonds` function

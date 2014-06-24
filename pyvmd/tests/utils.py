@@ -7,6 +7,8 @@ import pprint
 import unittest
 from unittest.util import safe_repr
 
+import VMD
+
 
 def data(filename):
     """
@@ -16,6 +18,14 @@ def data(filename):
 
 
 class PyvmdTestCase(unittest.TestCase):
+    """
+    Enhanced test case for pyvmd tests.
+    """
+    def tearDown(self):
+        # Delete all molecule when we're finished
+        for molid in VMD.molecule.listall():
+            VMD.molecule.delete(molid)
+
     def assertAlmostEqualSeqs(self, seq1, seq2, places=None, msg=None, delta=None):
         """
         An assertion for ordered sequences. Compares items one by one with

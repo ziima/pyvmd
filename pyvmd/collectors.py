@@ -8,6 +8,8 @@ import VMD
 
 from .objects import Molecule
 
+__all__ = ['Collector', 'DataSet', 'DataCollector', 'RMSDCollector']
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -81,7 +83,7 @@ class DataCollector(Collector):
         Adds selection to analysis.
 
         @param selection: The selection string.
-        @param name: Name of the column in output file. If not provided, it is generated in form 'dataXXXXX'.
+        @param name: Name of the column in output file. If not provided, it is generated in form 'data#####'.
         """
         if name is None:
             self._autoid += 1

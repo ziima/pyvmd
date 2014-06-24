@@ -5,6 +5,8 @@ import logging
 
 from .objects import Molecule
 
+__all__ = ['Loader', 'LoadStatus']
+
 
 LOGGER = logging.getLogger(__name__)
 

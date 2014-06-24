@@ -1,0 +1,28 @@
+[REPORTS]
+# Set the output format. Available formats are text, parseable, colorized, msvs
+# (visual studio) and html
+output-format=colorized
+
+# Include message's id in output
+include-ids=yes
+
+
+[BASIC]
+# Good variable names which should always be accepted, separated by a comma
+# a,b,c,d are for atoms
+# i,j,k are for indexes
+# x,y,z are for coordinates
+# setUp and tearDown are used in unittest
+good-names=a,b,c,d,i,j,k,x,y,z,_,setUp,tearDown
+
+# Regular expression which should only match functions or classes name which do
+# not require a docstring
+#
+# Docstrings are not required for private and magic methods
+# No docstrings for tests, it is easier to find test without docstring.
+no-docstring-rgx=(_|test).*
+
+
+[FORMAT]
+# Maximum number of characters on a single line.
+max-line-length=120

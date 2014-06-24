@@ -10,22 +10,26 @@ if not hasattr(unittest, 'skip'):
     import unittest2 as unittest
 
 
-if __name__ == '__main__':
-    # Start coverage if required
-    cover = os.environ.get('COVERAGE')
-    if cover:
-        import coverage
-        cov = coverage.coverage(branch=True, source=['pyvmd'])
-        cov.start()
-
+def cover_main():
+    """
+    Run tests with coverage.
+    """
+    import coverage
+    cov = coverage.coverage(branch=True, source=['pyvmd'])
+    cov.start()
     unit = unittest.main(exit=False)
-
-    if cover:
-        cov.stop()
-        cov.save()
+    cov.stop()
+    cov.save()
 
     if not hasattr(unit, 'result'):
         # Unittest help exit
         sys.exit(2)
     else:
         sys.exit(not unit.result.wasSuccessful())
+
+
+if __name__ == '__main__':
+    if os.environ.get('COVERAGE'):
+        cover_main()
+    else:
+        unittest.main()

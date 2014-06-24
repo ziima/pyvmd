@@ -1,12 +1,10 @@
 """
 Utilities for structure analysis.
 """
-import itertools
-
-import VMD
-
 from . import measure
 from .objects import Selection
+
+__all__ = ['hydrogen_bonds', 'HydrogenBond']
 
 
 class HydrogenBond(object):

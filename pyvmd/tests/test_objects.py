@@ -1,13 +1,11 @@
 """
 Tests for objects.
 """
-import unittest
-
 from numpy import ndarray
 from Molecule import Molecule as _Molecule
 import VMD
 
-from pyvmd.objects import Atom, Molecule, _MoleculeManager, Selection, FORMAT_PDB, NOW
+from pyvmd.objects import Atom, Molecule, MoleculeManager, Selection, FORMAT_PDB, NOW
 from .utils import data, PyvmdTestCase
 
 
@@ -19,11 +17,6 @@ class TestMolecule(PyvmdTestCase):
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
         VMD.molecule.read(molid, 'dcd', data('water.1.dcd'), waitfor=-1)
         self.molid = molid
-
-    def tearDown(self):
-        # Delete all molecules
-        for molid in VMD.molecule.listall():
-            VMD.molecule.delete(molid)
 
     def test_molecule_properties(self):
         # Test basic properties of Molecule
@@ -106,13 +99,14 @@ class TestMolecule(PyvmdTestCase):
 
         # Utility to get x coordinate through the trajectory to check results
         sel = VMD.atomsel.atomsel('index 0', molid=self.molid)
+
         def _get_x_coord():
             # Utility to get x coordinate through trajectory
-            data = []
+            values = []
             for frame in xrange(VMD.molecule.numframes(self.molid)):
                 sel.frame = frame
-                data.append(sel.get('x')[0])
-            return data
+                values.append(sel.get('x')[0])
+            return values
 
         # Check number of frames and iterator
         mol = Molecule(self.molid)
@@ -167,12 +161,12 @@ class TestMolecule(PyvmdTestCase):
             del mol.frames[None]
 
 
-class TestMoleculeManager(unittest.TestCase):
+class TestMoleculeManager(PyvmdTestCase):
     """
-    Test `_MoleculeManager` class.
+    Test `MoleculeManager` class.
     """
     def test_no_molecules(self):
-        man = _MoleculeManager()
+        man = MoleculeManager()
 
         self.assertEqual(len(man), 0)
         with self.assertRaises(ValueError):
@@ -193,7 +187,7 @@ class TestMoleculeManager(unittest.TestCase):
         mol1 = Molecule(VMD.molecule.new('Mine'))
         mol2 = Molecule(VMD.molecule.new('Other'))
         VMD.molecule.set_top(mol1.molid)
-        man = _MoleculeManager()
+        man = MoleculeManager()
 
         self.assertEqual(len(man), 2)
         self.assertEqual(man[mol1.molid], mol1)
@@ -249,7 +243,7 @@ class TestMoleculeManager(unittest.TestCase):
 
     def test_remote_actions(self):
         # Test manager can cope with molecule changes which happen without its knowledge
-        man = _MoleculeManager()
+        man = MoleculeManager()
 
         # Create a molecule
         mol1 = Molecule(VMD.molecule.new('Unique'))
@@ -269,11 +263,6 @@ class TestAtom(PyvmdTestCase):
     """
     Test `Atom` class.
     """
-    def tearDown(self):
-        # Delete all molecules
-        for molid in VMD.molecule.listall():
-            VMD.molecule.delete(molid)
-
     def test_properties(self):
         # Test getters and setters
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
@@ -316,8 +305,7 @@ class TestAtom(PyvmdTestCase):
 
     def test_atom_comparison(self):
         # Test molecule comparison
-        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol = Molecule(molid)
+        VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
         atom1 = Atom(0)
         atom2 = Atom(0)
         other = Atom(1)
@@ -397,15 +385,10 @@ class TestAtom(PyvmdTestCase):
             Atom.pick('none')
 
 
-class TestSelection(unittest.TestCase):
+class TestSelection(PyvmdTestCase):
     """
     Test `Selection` class.
     """
-    def tearDown(self):
-        # Delete all molecules
-        for molid in VMD.molecule.listall():
-            VMD.molecule.delete(molid)
-
     def test_properties(self):
         # Test basic properties
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
@@ -451,11 +434,13 @@ class TestSelection(unittest.TestCase):
         self.assertEqual(list(sel), [Atom(0), Atom(1), Atom(9), Atom(18), Atom(19), Atom(20)])
 
         # Define the selection's frame
+        result = [Atom(0, frame=9), Atom(1, frame=9), Atom(9, frame=9), Atom(18, frame=9), Atom(19, frame=9),
+                  Atom(20, frame=9)]
         sel.frame = 9
-        self.assertEqual(list(sel), [Atom(0, frame=9), Atom(1, frame=9), Atom(9, frame=9), Atom(18, frame=9), Atom(19, frame=9), Atom(20, frame=9)])
+        self.assertEqual(list(sel), result)
         # Change the molecule frame, the selection keeps its frame
         mol.frame = 11
-        self.assertEqual(list(sel), [Atom(0, frame=9), Atom(1, frame=9), Atom(9, frame=9), Atom(18, frame=9), Atom(19, frame=9), Atom(20, frame=9)])
+        self.assertEqual(list(sel), result)
 
         # Set the selection's frame back to the molecule's frame
         sel.frame = NOW
@@ -463,8 +448,7 @@ class TestSelection(unittest.TestCase):
 
     def test_contacts(self):
         # Test `contacts` method
-        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol = Molecule(molid)
+        VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
 
         sel1 = Selection('resid 1 to 3 and noh')
         sel2 = Selection('hydrogen')

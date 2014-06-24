@@ -1,10 +1,26 @@
 """
 Tests for utilities.
 """
+import VMD
+
 from .utils import PyvmdTestCase
 
 
 class TestPyvmdTestCase(PyvmdTestCase):
+    """
+    Test `PyvmdTestCase` class.
+    """
+    def test_teardown_deletes_molecules(self):
+        VMD.molecule.new('foo')
+        VMD.molecule.new('bar')
+
+        class Foo(PyvmdTestCase):
+            def runTest(self):
+                pass
+
+        Foo().tearDown()
+        self.assertEqual(VMD.molecule.num(), 0)
+
     def test_assert_almost_equal_seqs(self):
         self.assertAlmostEqualSeqs([], [])
         self.assertAlmostEqualSeqs((), [])

@@ -3,16 +3,15 @@ Tests for data collectors.
 """
 import os
 from tempfile import mkstemp
-import unittest
 
 from pyvmd.collectors import RMSDCollector
 from pyvmd.objects import Molecule
 from pyvmd.traj import Loader
 
-from .utils import data
+from .utils import data, PyvmdTestCase
 
 
-class TestRMSDCollector(unittest.TestCase):
+class TestRMSDCollector(PyvmdTestCase):
     """
     Test RMSD collector.
     """
@@ -22,6 +21,7 @@ class TestRMSDCollector(unittest.TestCase):
 
     def tearDown(self):
         os.unlink(self.tmpfile)
+        super(TestRMSDCollector, self).tearDown()
 
     def test_rmsd(self):
         # Test RMSD collector returns correct results

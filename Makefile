@@ -10,4 +10,9 @@ coverage:
 	python-coverage html -d htmlcov
 
 pylint:
-	PYTHONPATH="/usr/lib/vmd/scripts/python" pylint pyvmd
+	-PYTHONPATH="/usr/lib/vmd/scripts/python" pylint pyvmd
+
+pep8:
+	-pep8 pyvmd --max-line-length=119
+
+pepify: pylint pep8
