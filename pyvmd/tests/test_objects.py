@@ -8,10 +8,10 @@ from Molecule import Molecule as _Molecule
 import VMD
 
 from pyvmd.objects import Atom, Molecule, _MoleculeManager, Selection, FORMAT_PDB, NOW
-from .utils import data
+from .utils import data, PyvmdTestCase
 
 
-class TestMolecule(unittest.TestCase):
+class TestMolecule(PyvmdTestCase):
     """
     Test `Molecule` class.
     """
@@ -125,10 +125,9 @@ class TestMolecule(unittest.TestCase):
 
         # Check there is one more frame
         self.assertEqual(len(mol.frames), 14)
-        coords = [-1.4930000305175781, -1.4911566972732544, -1.4851371049880981, -1.4858486652374268,
-                  -1.477394700050354, -1.4746015071868896, -1.46733820438385, -1.4535547494888306, -1.4307434558868408,
-                  -1.4120502471923828, -1.385347843170166, -1.3674825429916382, -1.342192530632019, -1.4858486652374268]
-        self.assertEqual(_get_x_coord(), coords)
+        coords = [-1.493, -1.4911567, -1.4851371, -1.4858487, -1.4773947, -1.4746015, -1.4673382, -1.4535547,
+                  -1.4307435, -1.4120502, -1.3853478, -1.3674825, -1.3421925, -1.4858487]
+        self.assertAlmostEqualSeqs(_get_x_coord(), coords)
         # Check molecule is focused to the new frame
         self.assertEqual(mol.frame, 13)
 
@@ -136,37 +135,32 @@ class TestMolecule(unittest.TestCase):
         mol.frames.copy(4)
         # Check there is one more frame
         self.assertEqual(len(mol.frames), 15)
-        coords = [-1.4930000305175781, -1.4911566972732544, -1.4851371049880981, -1.4858486652374268,
-                  -1.477394700050354, -1.4746015071868896, -1.46733820438385, -1.4535547494888306, -1.4307434558868408,
-                  -1.4120502471923828, -1.385347843170166, -1.3674825429916382, -1.342192530632019, -1.4858486652374268,
-                  -1.477394700050354]
-        self.assertEqual(_get_x_coord(), coords)
+        coords = [-1.493, -1.4911567, -1.4851371, -1.4858487, -1.4773947, -1.4746015, -1.4673382, -1.4535547,
+                  -1.4307435, -1.4120502, -1.3853478, -1.3674825, -1.3421925, -1.4858487, -1.4773947]
+        self.assertAlmostEqualSeqs(_get_x_coord(), coords)
         # Molecule is focused to the new frame
         self.assertEqual(mol.frame, 14)
 
         # Test frame deletion - positive index
         del mol.frames[14]
         self.assertEqual(len(mol.frames), 14)
-        coords = [-1.4930000305175781, -1.4911566972732544, -1.4851371049880981, -1.4858486652374268,
-                  -1.477394700050354, -1.4746015071868896, -1.46733820438385, -1.4535547494888306, -1.4307434558868408,
-                  -1.4120502471923828, -1.385347843170166, -1.3674825429916382, -1.342192530632019, -1.4858486652374268]
-        self.assertEqual(_get_x_coord(), coords)
+        coords = [-1.493, -1.4911567, -1.4851371, -1.4858487, -1.4773947, -1.4746015, -1.4673382, -1.4535547,
+                  -1.4307435, -1.4120502, -1.3853478, -1.3674825, -1.3421925, -1.4858487]
+        self.assertAlmostEqualSeqs(_get_x_coord(), coords)
 
         # Test frame deletion - negative index
         del mol.frames[-2]
         self.assertEqual(len(mol.frames), 13)
-        coords = [-1.4930000305175781, -1.4911566972732544, -1.4851371049880981, -1.4858486652374268,
-                  -1.477394700050354, -1.4746015071868896, -1.46733820438385, -1.4535547494888306, -1.4307434558868408,
-                  -1.4120502471923828, -1.385347843170166, -1.3674825429916382, -1.4858486652374268]
-        self.assertEqual(_get_x_coord(), coords)
+        coords = [-1.493, -1.4911567, -1.4851371, -1.4858487, -1.4773947, -1.4746015, -1.4673382, -1.4535547,
+                  -1.4307435, -1.4120502, -1.3853478, -1.3674825, -1.4858487]
+        self.assertAlmostEqualSeqs(_get_x_coord(), coords)
 
         # Check deletion of frame slice
         del mol.frames[2:11:3]
         self.assertEqual(len(mol.frames), 10)
-        coords = [-1.4930000305175781, -1.4911566972732544, -1.4858486652374268, -1.477394700050354, -1.46733820438385,
-                  -1.4535547494888306, -1.4120502471923828, -1.385347843170166, -1.3674825429916382,
-                  -1.4858486652374268]
-        self.assertEqual(_get_x_coord(), coords)
+        coords = [-1.493, -1.4911567, -1.4858487, -1.4773947, -1.4673382, -1.4535547, -1.4120502, -1.3853478,
+                  -1.3674825, -1.4858487]
+        self.assertAlmostEqualSeqs(_get_x_coord(), coords)
 
         # Invalid key for slice
         with self.assertRaises(TypeError):
@@ -271,7 +265,7 @@ class TestMoleculeManager(unittest.TestCase):
         self.assertEqual(man['Unique'], mol2)
 
 
-class TestAtom(unittest.TestCase):
+class TestAtom(PyvmdTestCase):
     """
     Test `Atom` class.
     """
@@ -293,32 +287,32 @@ class TestAtom(unittest.TestCase):
         self.assertAlmostEqual(atom.y, 1.900)
         self.assertAlmostEqual(atom.z, 1.280)
         self.assertIsInstance(atom.coords, ndarray)
-        self.assertEqual(list(atom.coords), [-1.4930000305175781, 1.8999999761581421, 1.2799999713897705])
+        self.assertAlmostEqualSeqs(list(atom.coords), [-1.493, 1.9, 1.28])
         self.assertEqual(list(atom.bonded), [Atom(1), Atom(2)])
         # Test setters
         atom.x = 23.9
         atom.y = -200.45
         atom.z = 0
         sel = VMD.atomsel.atomsel('index 0', molid=molid)
-        self.assertEqual(sel.get('x'), [23.899999618530273])
-        self.assertEqual(sel.get('y'), [-200.4499969482422])
-        self.assertEqual(sel.get('z'), [0])
         #XXX: There are some troubles with rounding in set
+        self.assertAlmostEqualSeqs(sel.get('x'), [23.9], places=6)
+        self.assertAlmostEqualSeqs(sel.get('y'), [-200.45], places=5)
+        self.assertAlmostEqualSeqs(sel.get('z'), [0])
         self.assertAlmostEqual(atom.x, 23.9, places=6)
         self.assertAlmostEqual(atom.y, -200.45, places=5)
         self.assertAlmostEqual(atom.z, 0)
-        self.assertEqual(list(atom.coords), [23.899999618530273, -200.4499969482422, 0])
+        self.assertAlmostEqualSeqs(list(atom.coords), [23.9, -200.45, 0], places=5)
 
         # Set complete coordinates
         atom.coords = (-90.56, 42, 17.85)
-        self.assertEqual(sel.get('x'), [-90.55999755859375])
-        self.assertEqual(sel.get('y'), [42])
-        self.assertEqual(sel.get('z'), [17.850000381469727])
         #XXX: There are some troubles with rounding in set
+        self.assertAlmostEqualSeqs(sel.get('x'), [-90.56], places=5)
+        self.assertAlmostEqualSeqs(sel.get('y'), [42])
+        self.assertAlmostEqualSeqs(sel.get('z'), [17.85], places=6)
         self.assertAlmostEqual(atom.x, -90.56, places=5)
         self.assertAlmostEqual(atom.y, 42)
         self.assertAlmostEqual(atom.z, 17.85, places=6)
-        self.assertEqual(list(atom.coords), [-90.55999755859375, 42, 17.850000381469727])
+        self.assertAlmostEqualSeqs(list(atom.coords), [-90.56, 42, 17.85], places=5)
 
     def test_atom_comparison(self):
         # Test molecule comparison

@@ -1,23 +1,19 @@
 """
 Tests for trajectory analysis utilities.
 """
-import unittest
-
 import VMD
 
 from pyvmd.traj import Loader
 
-from .utils import data
+from .utils import data, PyvmdTestCase
 
 
-X_COORDS = [-1.4911566972732544, -1.4851371049880981, -1.4858486652374268, -1.477394700050354, -1.4746015071868896,
-            -1.46733820438385, -1.4535547494888306, -1.4307434558868408, -1.4120502471923828, -1.385347843170166,
-            -1.3674825429916382, -1.342192530632019, -1.3177858591079712, -1.281699776649475, -1.2579591274261475,
-            -1.2262494564056396, -1.2036056518554688, -1.1834533214569092, -1.1749160289764404, -1.1693806648254395,
-            -1.1705243587493896, -1.1722997426986694, -1.175995111465454, -1.1752450466156006]
+X_COORDS = [-1.4911567, -1.4851371, -1.4858487, -1.4773947, -1.4746015, -1.4673382, -1.4535547, -1.4307435, -1.4120502,
+            -1.3853478, -1.3674825, -1.3421925, -1.3177859, -1.2816998, -1.2579591, -1.2262495, -1.2036057, -1.1834533,
+            -1.174916, -1.1693807, -1.1705244, -1.1722997, -1.1759951, -1.175245]
 
 
-class TestLoader(unittest.TestCase):
+class TestLoader(PyvmdTestCase):
     """
     Test `Loader` class.
     """
@@ -38,5 +34,5 @@ class TestLoader(unittest.TestCase):
         loader.add_callback(_get_status)
         loader.add_callback(_get_x)
         loader.run()
-        self.assertEqual(x_coords, X_COORDS)
+        self.assertAlmostEqualSeqs(x_coords, X_COORDS)
         self.assertEqual(frames, range(24))
