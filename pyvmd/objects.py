@@ -407,7 +407,7 @@ class Atom(SelectionMixin):
     This class is a proxy to a atom in molecule loaded into VMD.
     """
     # Large amounts of atoms can be created, slots has some performance benefits.
-    __slots__ = SelectionMixin.__slots__ + ['_index']
+    __slots__ = ['_index']
 
     def __init__(self, index, molecule=None, frame=NOW):
         """
