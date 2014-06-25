@@ -10,8 +10,8 @@ from atomsel import atomsel as _atomsel
 from Molecule import Molecule as _Molecule
 from VMD import molecule as _molecule
 
-__all__ = ['Atom', 'Frames', 'Molecule', 'MoleculeManager', 'Selection', 'FORMAT_DCD', 'FORMAT_PDB', 'FORMAT_PSF',
-           'FORMATS', 'MOLECULES', 'NOW']
+__all__ = ['Atom', 'Frames', 'Molecule', 'MoleculeManager', 'Residue', 'Selection', 'FORMAT_DCD', 'FORMAT_PDB',
+           'FORMAT_PSF', 'FORMATS', 'MOLECULES', 'NOW']
 
 
 LOGGER = logging.getLogger(__name__)
@@ -284,12 +284,12 @@ MOLECULES = MoleculeManager()
 NOW = -1
 
 
-class SelectionMixin(object):
+class SelectionBase(object):
     """
     Base class for selection-like objects.
     """
     # Large amounts of these objects can be created, slots has some performance benefits.
-    __slots__ = ['_molecule', '_frame', '_atomsel']
+    __slots__ = ('_molecule', '_frame', '_atomsel')
 
     def __init__(self, molecule=None, frame=NOW):
         """
@@ -324,8 +324,34 @@ class SelectionMixin(object):
 
     frame = property(_get_frame, _set_frame, doc="Frame")
 
+    @property
+    def atomsel(self):
+        """
+        Returns respective 'VMD.atomsel' instance. Derived class must implement this property.
+        """
+        raise NotImplementedError
 
-class Selection(SelectionMixin):
+
+class IterableSelectionMixin(object):
+    """
+    Base class for selection-based objects which represent multiple atoms.
+    """
+    # Large amounts of these objects can be created, slots has some performance benefits.
+    __slots__ = ()
+
+    def __len__(self):
+        return len(self.atomsel)
+
+    def __iter__(self):
+        for index in self.atomsel:
+            yield Atom(index, self._molecule, self._frame)
+
+    def __contains__(self, atom):
+        assert isinstance(atom, Atom)
+        return self.atomsel[atom.index]
+
+
+class Selection(IterableSelectionMixin, SelectionBase):
     """
     Selection of atoms.
 
@@ -359,17 +385,6 @@ class Selection(SelectionMixin):
     def __repr__(self):
         return "<%s: '%s' of '%r' at %d>" % (type(self).__name__, self._selection, self._molecule, self._frame)
 
-    def __len__(self):
-        return len(self.atomsel)
-
-    def __iter__(self):
-        for index in self.atomsel:
-            yield Atom(index, self._molecule, self._frame)
-
-    def __contains__(self, atom):
-        assert isinstance(atom, Atom)
-        return self.atomsel[atom.index]
-
     @property
     def selection(self):
         "Selection text"
@@ -400,30 +415,25 @@ class Selection(SelectionMixin):
                 for a, b in itertools.izip(atoms_self, atoms_other))
 
 
-class Atom(SelectionMixin):
+class UniqueSelectionBase(SelectionBase):
     """
-    Atom representation.
-
-    This class is a proxy to a atom in molecule loaded into VMD.
+    Base class for selection-based objects which have unique identification.
     """
-    # Large amounts of atoms can be created, slots has some performance benefits.
-    __slots__ = ['_index']
+    # Large amounts of these objects can be created, slots has some performance benefits.
+    __slots__ = ('_index', )
 
     def __init__(self, index, molecule=None, frame=NOW):
         """
-        Creates atom representation.
+        Creates the object.
 
-        @param index: Index of the atom
-        @param molecule: Atom's molecule. Top if not provider.
+        @param index: Index of the selection which can not be changed and provide unique identification.
+        @param molecule: Selection's molecule. Top if not provider.
         @type molecule: Molecule or None
-        @param frame: Atom's frame
+        @param frame: Selection's frame
         @type frame: Non-negative integer or NOW
         """
         assert isinstance(index, int) and index >= 0
-        super(Atom, self).__init__(molecule=molecule, frame=frame)
-        # Check if index makes sense
-        if index >= _molecule.numatoms(self._molecule.molid):
-            raise ValueError("Atom %d doesn't exist in '%s' at %s" % (index, self._molecule, frame))
+        super(UniqueSelectionBase, self).__init__(molecule=molecule, frame=frame)
         self._index = index
 
     def __repr__(self):
@@ -435,6 +445,45 @@ class Atom(SelectionMixin):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    @property
+    def index(self):
+        "Index"
+        return self._index
+
+    # Basic getters and setters for selection data
+    def _getter(self, name):
+        # The getter should be used only for values which are the same through the selection.
+        return self.atomsel.get(name)[0]
+
+    def _setter(self, name, value):
+        # The setter should be used only for values which are the same through the selection.
+        return self.atomsel.set(name, value)
+
+
+class Atom(UniqueSelectionBase):
+    """
+    Atom representation.
+
+    This class is a proxy to a atom in molecule loaded into VMD.
+    """
+    # Large amounts of these objects can be created, slots has some performance benefits.
+    __slots__ = ()
+
+    def __init__(self, index, molecule=None, frame=NOW):
+        """
+        Creates atom representation.
+
+        @param index: Index of the atom
+        @param molecule: Atom's molecule. Top if not provider.
+        @type molecule: Molecule or None
+        @param frame: Atom's frame
+        @type frame: Non-negative integer or NOW
+        """
+        super(Atom, self).__init__(index, molecule=molecule, frame=frame)
+        # Check if index makes sense
+        if index >= _molecule.numatoms(self._molecule.molid):
+            raise ValueError("Atom %d doesn't exist in '%s' at %s" % (index, self._molecule, frame))
 
     @classmethod
     def pick(cls, selection, molecule=None, frame=NOW):
@@ -460,11 +509,6 @@ class Atom(SelectionMixin):
         return self
 
     @property
-    def index(self):
-        "Index"
-        return self._index
-
-    @property
     def atomsel(self):
         """
         Returns respective 'VMD.atomsel' instance.
@@ -475,13 +519,6 @@ class Atom(SelectionMixin):
 
     ############################################################################
     # Atom's data
-    # Getters and setters for atom's data
-    def _getter(self, name):
-        return self.atomsel.get(name)[0]
-
-    def _setter(self, name, value):
-        return self.atomsel.set(name, value)
-
     # Coordinates
     def _get_x(self):
         return self._getter('x')
@@ -517,9 +554,50 @@ class Atom(SelectionMixin):
 
     coords = property(_get_coords, _set_coords, doc="Array of (x, y, z) coordinates.")
 
+    ############################################################################
+    # Connections to other objects
     @property
     def bonded(self):
         """
         Returns iterator over Atoms bonded to this one.
         """
         return (Atom(i, self._molecule, self._frame) for i in self.atomsel.bonds[0])
+
+    @property
+    def residue(self):
+        """
+        Returns atom's residue.
+        """
+        return Residue(self._getter('residue'), self._molecule, self._frame)
+
+
+class Residue(IterableSelectionMixin, UniqueSelectionBase):
+    """
+    Residue representation.
+
+    This class is a proxy to a residue in molecule loaded into VMD.
+    The residue is identified by 'residue' value from VMD.
+    """
+    # Large amounts of these objects can be created, slots has some performance benefits.
+    __slots__ = ()
+
+    #TODO: Check if index makes sense in __init__
+
+    @property
+    def atomsel(self):
+        """
+        Returns respective 'VMD.atomsel' instance.
+        """
+        if self._atomsel is None:
+            self._atomsel = _atomsel('residue %d' % self._index, frame=self._frame, molid=self._molecule.molid)
+        return self._atomsel
+
+    ############################################################################
+    # Residue's data
+    def _get_resid(self):
+        return self._getter('resid')
+
+    def _set_resid(self, value):
+        return self._setter('resid', value)
+
+    number = property(_get_resid, _set_resid, doc="Residue number")
