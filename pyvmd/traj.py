@@ -102,7 +102,7 @@ class Loader(object):
                 status.next_chunk()
                 for dummy in xrange(0, loaded):
                     status.next_frame()
-                    LOGGER.debug('Analyzing frame %d', status.frame)
+                    LOGGER.info('Analyzing frame %d', status.frame)
                     for callback in self._callbacks:
                         callback(status)
 
