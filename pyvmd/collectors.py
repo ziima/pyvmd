@@ -6,7 +6,7 @@ import logging
 import VMD
 
 from .datasets import DataSet
-from .objects import Molecule
+from .molecules import Molecule
 
 __all__ = ['Collector', 'DataCollector', 'RMSDCollector']
 

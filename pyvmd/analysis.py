@@ -2,7 +2,7 @@
 Utilities for structure analysis.
 """
 from . import measure
-from .objects import Selection
+from .atoms import Selection
 
 __all__ = ['hydrogen_bonds', 'HydrogenBond']
 

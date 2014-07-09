@@ -4,7 +4,7 @@ Tests for analysis.
 import VMD
 
 from pyvmd.analysis import hydrogen_bonds, HydrogenBond
-from pyvmd.objects import Atom, Selection
+from pyvmd.atoms import Atom, Selection
 from .utils import data, PyvmdTestCase
 
 

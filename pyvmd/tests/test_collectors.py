@@ -4,7 +4,7 @@ Tests for data collectors.
 from cStringIO import StringIO
 
 from pyvmd.collectors import RMSDCollector
-from pyvmd.objects import Molecule
+from pyvmd.molecules import Molecule
 from pyvmd.traj import Loader
 
 from .utils import data, PyvmdTestCase

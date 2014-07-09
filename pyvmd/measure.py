@@ -5,7 +5,7 @@ import math
 from numpy import cross, ndarray
 from numpy.linalg import norm
 
-from .objects import Atom
+from .atoms import Atom
 
 __all__ = ['angle', 'dihedral', 'distance', 'improper']
 

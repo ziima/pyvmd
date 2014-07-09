@@ -3,7 +3,7 @@ Tests for trajectory analysis utilities.
 """
 import VMD
 
-from pyvmd.objects import Molecule
+from pyvmd.molecules import Molecule
 from pyvmd.traj import Loader
 
 from .utils import data, PyvmdTestCase

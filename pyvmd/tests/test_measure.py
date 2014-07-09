@@ -3,8 +3,8 @@ Tests for measure.
 """
 import VMD
 
+from pyvmd.atoms import Atom
 from pyvmd.measure import distance, angle, dihedral, improper
-from pyvmd.objects import Atom
 from .utils import data, PyvmdTestCase
 
 

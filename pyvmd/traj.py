@@ -3,7 +3,7 @@ Trajectory analysis utilities
 """
 import logging
 
-from .objects import Molecule
+from .molecules import Molecule
 
 __all__ = ['Loader', 'LoadStatus']
 
