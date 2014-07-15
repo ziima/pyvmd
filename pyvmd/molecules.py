@@ -263,10 +263,11 @@ class MoleculeManager(object):
         return _molecule.exists(molecule.molid)
 
     def _get_top(self):
-        #XXX: Check if there is a molecule. `get_top` returns 0 even if there are no molecules.
-        if not _molecule.num():
-            raise AttributeError("There are no molecules.")
-        return Molecule(_molecule.get_top())
+        molid = _molecule.get_top()
+        # If there are no molecules, VMD returns -1 as molid.
+        if molid < 0:
+            raise ValueError("There are no molecules.")
+        return Molecule(molid)
 
     def _set_top(self, molecule):
         _molecule.set_top(molecule.molid)

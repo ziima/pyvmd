@@ -179,7 +179,7 @@ class TestMoleculeManager(PyvmdTestCase):
         with self.assertRaises(ValueError):
             del man['molecule']
         self.assertEqual(list(man), [])
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(ValueError):
             man.top
 
     def test_molecules(self):
