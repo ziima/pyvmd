@@ -3,9 +3,10 @@ Data collectors for trajectory analysis.
 """
 import logging
 
+from . import measure
 from .atoms import Selection
 
-__all__ = ['Collector', 'FrameCollector', 'RMSDCollector']
+__all__ = ['Collector', 'FrameCollector', 'RMSDCollector', 'XCoordCollector', 'YCoordCollector', 'ZCoordCollector']
 
 
 LOGGER = logging.getLogger(__name__)
@@ -52,6 +53,53 @@ class FrameCollector(Collector):
 
     def collect(self, step):
         return step.frame
+
+
+def _selection_center(selection_text, molecule):
+    """
+    Utility method to get center of selection.
+    """
+    sel = Selection(selection_text, molecule)
+    return measure.center(sel)
+
+
+class BaseCoordCollector(Collector):
+    """
+    Base class for collectors of X, Y and Z coordinates.
+    """
+    def __init__(self, selection, name=None):
+        """
+        Creates coordinate collector.
+
+        @param selection: Selection text for collector.
+        """
+        assert isinstance(selection, basestring)
+        super(BaseCoordCollector, self).__init__(name)
+        self.selection = selection
+
+
+class XCoordCollector(BaseCoordCollector):
+    """
+    Collects X coordinate of atom or center of selection.
+    """
+    def collect(self, step):
+        return _selection_center(self.selection, step.molecule)[0]
+
+
+class YCoordCollector(BaseCoordCollector):
+    """
+    Collects Y coordinate of atom or center of selection.
+    """
+    def collect(self, step):
+        return _selection_center(self.selection, step.molecule)[1]
+
+
+class ZCoordCollector(BaseCoordCollector):
+    """
+    Collects Z coordinate of atom or center of selection.
+    """
+    def collect(self, step):
+        return _selection_center(self.selection, step.molecule)[2]
 
 
 class RMSDCollector(Collector):
