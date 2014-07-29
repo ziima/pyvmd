@@ -286,6 +286,23 @@ class Atom(UniqueSelectionBase):
 
     coords = property(_get_coords, _set_coords, doc="Array of (x, y, z) coordinates.")
 
+    # Other data
+    def _get_name(self):
+        return self._getter('name')
+
+    def _set_name(self, value):
+        return self._setter('name', value)
+
+    name = property(_get_name, _set_name, doc="Atom name")
+
+    def _get_type(self):
+        return self._getter('type')
+
+    def _set_type(self, value):
+        return self._setter('type', value)
+
+    type = property(_get_type, _set_type, doc="Atom type")
+
     ############################################################################
     # Connections to other objects
     @property
@@ -333,3 +350,11 @@ class Residue(IterableSelectionMixin, UniqueSelectionBase):
         return self._setter('resid', value)
 
     number = property(_get_resid, _set_resid, doc="Residue number")
+
+    def _get_name(self):
+        return self._getter('resname')
+
+    def _set_name(self, value):
+        return self._setter('resname', value)
+
+    name = property(_get_name, _set_name, doc="Residue name")

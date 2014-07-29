@@ -28,8 +28,11 @@ class TestAtom(PyvmdTestCase):
         self.assertAlmostEqual(atom.z, 1.280)
         self.assertIsInstance(atom.coords, ndarray)
         self.assertAlmostEqualSeqs(list(atom.coords), [-1.493, 1.9, 1.28])
+        self.assertEqual(atom.name, 'OH2')
+        self.assertEqual(atom.type, 'OT')
         self.assertEqual(list(atom.bonded), [Atom(1), Atom(2)])
         self.assertEqual(atom.residue, Residue(0))
+
         # Test setters
         with self.assertRaises(AttributeError):
             atom.index = 42
@@ -63,6 +66,14 @@ class TestAtom(PyvmdTestCase):
         self.assertAlmostEqual(atom.y, 42)
         self.assertAlmostEqual(atom.z, 17.85, places=6)
         self.assertAlmostEqualSeqs(list(atom.coords), [-90.56, 42, 17.85], places=5)
+
+        # Test setters for other attributes
+        atom.name = 'NEW'
+        self.assertEqual(atom.name, 'NEW')
+        self.assertEqual(sel.get('name'), ['NEW'])
+        atom.type = 'N18'
+        self.assertEqual(atom.type, 'N18')
+        self.assertEqual(sel.get('type'), ['N18'])
 
     def test_comparison(self):
         # Test atom comparison
@@ -163,16 +174,22 @@ class TestResidue(PyvmdTestCase):
         self.assertEqual(res.molecule, mol)
         self.assertEqual(res.frame, NOW)
         self.assertEqual(res.number, 1)
+        self.assertEqual(res.name, 'TIP3')
 
         # Test setters
         with self.assertRaises(AttributeError):
             res.index = 42
         with self.assertRaises(AttributeError):
             res.molecule = Molecule(molid)
+
         res.number = 42
         sel = VMD.atomsel.atomsel('residue 0', molid=molid)
         self.assertEqual(sel.get('resid'), [42, 42, 42])
         self.assertEqual(res.number, 42)
+
+        res.name = 'WAT'
+        self.assertEqual(sel.get('resname'), ['WAT', 'WAT', 'WAT'])
+        self.assertEqual(res.name, 'WAT')
 
         # Test container methods
         self.assertEqual(len(res), 3)
