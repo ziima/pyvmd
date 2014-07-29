@@ -3,12 +3,9 @@ Data collectors for trajectory analysis.
 """
 import logging
 
-import VMD
+from .atoms import Selection
 
-from .datasets import DataSet
-from .molecules import Molecule
-
-__all__ = ['Collector', 'DataCollector', 'RMSDCollector']
+__all__ = ['Collector', 'FrameCollector', 'RMSDCollector']
 
 
 LOGGER = logging.getLogger(__name__)
@@ -18,7 +15,26 @@ class Collector(object):
     """
     Base class for collectors. Collects data from trajectory and writes them into file.
     """
-    def collect(self, status):
+    # Format of the column header in the output
+    header_fmt = '%10s'
+    # Format of the data in the output
+    data_fmt = '%10.4f'
+
+    # Counter for automatic name generation.
+    auto_name_counter = 0
+
+    def __init__(self, name=None):
+        """
+        Create the collector.
+
+        @param name: Name of the collector. If not provided, it is generated in form 'data#####'.
+        """
+        if name is None:
+            Collector.auto_name_counter += 1
+            name = 'data%05d' % Collector.auto_name_counter
+        self.name = name
+
+    def collect(self, step):
         """
         Performs the analysis on the frame.
 
@@ -27,77 +43,56 @@ class Collector(object):
         raise NotImplementedError
 
 
-class DataCollector(Collector):
+class FrameCollector(Collector):
     """
-    Base class for collectors which collects data for several different selections.
+    Utility collector which collects frame number.
     """
-    def __init__(self):
-        """
-        Creates selection collector.
-        """
-        self.dataset = DataSet()
-        self.dataset.add_column('frame', '%8d', '%8s')
-        # List of selection strings for analysis
-        self._selections = []
-        # Last used ID for automatically generated names
-        self._autoid = 0
+    header_fmt = '%8s'
+    data_fmt = '%8d'
 
-    def add_selection(self, selection, name=None):
-        """
-        Adds selection to analysis.
-
-        @param selection: The selection string.
-        @param name: Name of the column in data set. If not provided, it is generated in form 'data#####'.
-        """
-        if name is None:
-            self._autoid += 1
-            name = 'data%05d' % self._autoid
-        self.dataset.add_column(name)
-        self._selections.append(selection)
-        LOGGER.debug("Added selection '%s' named '%s'", selection, name)
+    def collect(self, step):
+        return step.frame
 
 
-class RMSDCollector(DataCollector):
+class RMSDCollector(Collector):
     """
     Collects RMSD data.
     """
-    def __init__(self, reference):
+    def __init__(self, selection, reference, name=None):
         """
         Creates RMSD collector.
 
-        @param reference: Reference molecule
-        @type reference: Molecule
+        @param selection: Selection text for RMSD
+        @param reference: Reference for RMSD
+        @type reference: Selection
         """
-        assert isinstance(reference, Molecule)
-        super(RMSDCollector, self).__init__()
+        assert isinstance(selection, basestring)
+        assert isinstance(reference, Selection)
+        super(RMSDCollector, self).__init__(name)
+        self.selection = selection
         self.reference = reference
 
-    def collect(self, status):
-        # Current frame number
-        cur_frame = status.molecule.frame
-        # Duplicate the trajectory frame because we will modify the coordinates
-        # This also sets the molecule to the duplicated frame
-        status.molecule.frames.copy()
+    def collect(self, step):
+        # Active frame number of the molecule.
+        cur_frame = step.molecule.frame
+        # Duplicate the trajectory frame because we will modify the coordinates.
+        # This also sets the molecule frame to the duplicated frame.
+        step.molecule.frames.copy()
         # Duplicated frame number
-        dup_frame = status.molecule.frame
+        dup_frame = step.molecule.frame
 
-        whole = VMD.atomsel.atomsel('all', molid=status.molecule.molid)
+        all_atoms = Selection('all', step.molecule)
+        sel = Selection(self.selection, step.molecule)
 
-        # Collect the data
-        data = [status.frame]
-        for selection in self._selections:
-            ref = VMD.atomsel.atomsel(selection, frame=self.reference.frame, molid=self.reference.molid)
-            sel = VMD.atomsel.atomsel(selection, molid=status.molecule.molid)
+        # Align coordinates to the reference
+        all_atoms.atomsel.move(sel.atomsel.fit(self.reference.atomsel))
 
-            # Align coordinates to the reference
-            whole.move(sel.fit(ref))
-
-            # Measure RMSD
-            data.append(sel.rmsd(ref))
+        # Measure RMSD
+        rmsd = sel.atomsel.rmsd(self.reference.atomsel)
 
         # Delete the duplicated frame and reset trajectory frame
-        del status.molecule.frames[dup_frame]
-        status.molecule.frame = cur_frame
+        del step.molecule.frames[dup_frame]
+        step.molecule.frame = cur_frame
 
-        # Store the data
-        self.dataset.add_row(data)
+        # Return the RMSD value
+        return rmsd

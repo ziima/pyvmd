@@ -1,18 +1,15 @@
 """
 Data sets to collect and store data from trajectory analysis.
 """
-from collections import namedtuple
 import logging
 
 import numpy
 
-__all__ = ['Column', 'DataSet']
+from .collectors import Collector, FrameCollector
+
+__all__ = ['DataSet']
 
 LOGGER = logging.getLogger(__name__)
-
-
-# Contains meta data for DataSet column
-Column = namedtuple('Column', ('name', 'fmt', 'header_fmt'))
 
 
 class DataSet(object):
@@ -25,36 +22,42 @@ class DataSet(object):
     def __init__(self):
         # Array with data
         self._data = None
-        # List of columns
-        self.columns = []
+        # List of collectors
+        self.collectors = []
         # Number of rows filled with data
         self._rows = 0
+
+        # Register the frame collector
+        self.add_collector(FrameCollector('frame'))
 
     @property
     def data(self):
         """
         Returns collected data.
         """
-        # Return only the data, not the pre-allocated space.
+        # Return only the collected data, not the pre-allocated space.
         return self._data[:self._rows]
 
-    def add_column(self, name, fmt='%10.4f', header_fmt='%10s'):
+    def add_collector(self, collector):
         """
-        Adds column to the list of columns.
+        Registers collector into this dataset.
+        """
+        assert isinstance(collector, Collector)
+        self.collectors.append(collector)
+        LOGGER.debug("Added collector '%s' to dataset '%s'", collector.name, self)
 
-        @param name: Unique name of a column
+    def collect(self, step):
         """
-        assert isinstance(name, basestring)
-        if name in [c.name for c in self.columns]:
-            raise ValueError("The column '%s' already exists." % name)
-        column = Column(name, fmt, header_fmt)
-        self.columns.append(column)
+        Retrieves data from collectors and store them. Callback for Analyzer.
+        """
+        row = [collector.collect(step) for collector in self.collectors]
+        self._add_row(row)
 
-    def add_row(self, row):
+    def _add_row(self, row):
         """
-        Adds list of data as a new row.
+        Stores new row with data.
         """
-        num_columns = len(self.columns)
+        num_columns = len(self.collectors)
         num_rows = self._rows + 1
 
         # Create array if it doesn't exist
@@ -81,7 +84,7 @@ class DataSet(object):
         """
         Writes data into output.
 
-        @param output: Filename of file-like object
+        @param output: Filename or file-like object
         """
         if isinstance(output, basestring):
             out = open(output, 'w')
@@ -89,10 +92,10 @@ class DataSet(object):
             out = output
 
         # Write header
-        header_fmt = ' '.join([c.header_fmt for c in self.columns])
-        out.write(header_fmt % tuple(c.name for c in self.columns))
+        header_fmt = ' '.join([c.header_fmt for c in self.collectors])
+        out.write(header_fmt % tuple(c.name for c in self.collectors))
         out.write('\n')
 
         # Write data
-        formats = [c.fmt for c in self.columns]
+        formats = [c.data_fmt for c in self.collectors]
         numpy.savetxt(out, self.data, formats)

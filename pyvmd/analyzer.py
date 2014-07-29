@@ -72,11 +72,11 @@ class Analyzer(object):
         """
         self._callbacks.append(callback)
 
-    def add_collector(self, collector):
+    def add_dataset(self, dataset):
         """
-        Adds collector to be run on every frame.
+        Registers dataset for analysis.
         """
-        self._callbacks.append(collector.collect)
+        self._callbacks.append(dataset.collect)
 
     def analyze(self):
         """

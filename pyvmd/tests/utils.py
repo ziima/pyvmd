@@ -9,6 +9,8 @@ from unittest.util import safe_repr
 
 import VMD
 
+from pyvmd.collectors import Collector
+
 
 def data(filename):
     """
@@ -25,6 +27,8 @@ class PyvmdTestCase(unittest.TestCase):
         # Delete all molecule when we're finished
         for molid in VMD.molecule.listall():
             VMD.molecule.delete(molid)
+        # Restore Collector's auto_name_counter
+        Collector.auto_name_counter = 0
 
     def assertAlmostEqualSeqs(self, seq1, seq2, places=None, msg=None, delta=None):
         """
