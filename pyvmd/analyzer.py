@@ -1,22 +1,22 @@
 """
-Trajectory analysis utilities
+Analyzer - performs analysis throughout trajectory.
 """
 import logging
 
 from .molecules import Molecule
 
-__all__ = ['Loader', 'LoadStatus']
+__all__ = ['Analyzer', 'Step']
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-class LoadStatus(object):
+class Step(object):
     """
-    Holds information about loading.
+    Container with information about ongoing analysis.
 
     @ivar molecule: Molecule object
-    @ivar frame: Total count of current frame
+    @ivar frame: Currently analyzed frame (total count).
     """
     def __init__(self, molecule):
         self.molecule = molecule
@@ -29,7 +29,7 @@ class LoadStatus(object):
         return '<%s: %d>' % (type(self).__name__, self.frame)
 
     def __str__(self):
-        return 'Frame %d' % self.frame
+        return 'Step %d' % self.frame
 
     def next_chunk(self):
         """
@@ -46,9 +46,9 @@ class LoadStatus(object):
         self.molecule.frame = self._chunk_frame
 
 
-class Loader(object):
+class Analyzer(object):
     """
-    Iteratively loads the trajectory files.
+    Iteratively loads the trajectory files and performs analysis.
     """
     def __init__(self, molecule, traj_files, step=1, chunk=10):
         """
@@ -78,14 +78,14 @@ class Loader(object):
         """
         self._callbacks.append(collector.collect)
 
-    def run(self):
+    def analyze(self):
         """
-        Run the trajectory.
+        Run the analysis.
         """
         # Clear the molecule frames
         del self.molecule.frames[:]
 
-        status = LoadStatus(self.molecule)
+        step = Step(self.molecule)
         for filename in self.traj_files:
             start = 0
             while True:
@@ -99,12 +99,12 @@ class Loader(object):
                     break
 
                 # Call the callback
-                status.next_chunk()
+                step.next_chunk()
                 for dummy in xrange(0, loaded):
-                    status.next_frame()
-                    LOGGER.info('Analyzing frame %d', status.frame)
+                    step.next_frame()
+                    LOGGER.info('Analyzing frame %d', step.frame)
                     for callback in self._callbacks:
-                        callback(status)
+                        callback(step)
 
                 # Prepare for next iteration - delete all frames
                 del self.molecule.frames[:]
@@ -112,4 +112,4 @@ class Loader(object):
                     # Nothing else to be loaded for this filename
                     break
                 start += self.step * self.chunk
-        LOGGER.info('Analyzed %s frames.', status.frame + 1)
+        LOGGER.info('Analyzed %s frames.', step.frame + 1)

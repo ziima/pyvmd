@@ -1,28 +1,29 @@
 # Trajectory analysis #
 
-Pyvmd attempts to provides tools for trajectory analysis.
+Pyvmd attempts to provides rather flexible tools for trajectory analysis.
 
-## Trajectory loading ##
-Pyvmd provides tools for iterative analysis of trajectories bigger than available memory.
+## Analyzer ##
+Analyzer is the basic object in trajectory analysis. It loads trajectory files iteratively, thus allowing analysis for
+trajectories bigger than available memory.
 
 You can register any number of callbacks to be run on every snapshot of the trajectory.
-Each callback will be provided a `status` object, which contains information about the trajectory.
+Each callback will be provided a `step` object, which contains information about the ongoing analysis.
 
 ### Examples ###
 ```python
+from pyvmd.analyzer import Analyzer
 from pyvmd.molecule import Molecule
-from pyvmd.traj import Loader
 
-def my_callback(status):
-    print "The molecule:", status.molecule
-    print "Total frame number", status.frame
+def my_callback(step):
+    print "The molecule:", step.molecule
+    print "Total frame number", step.frame
 
-mol = Molecule(0)  # Molecule for trajectory loading. It will be modified.
-loader = Loader(mol, ['foo.dcd', 'bar.dcd'])
+mol = Molecule(0)  # Molecule for analysis. It will be modified.
+analyzer = Analyzer(mol, ['foo.dcd', 'bar.dcd'])
 # Set the callbacks to be run on every frame
-loader.add_callback(my_callback)
+analyzer.add_callback(my_callback)
 # Run the analysis
-loader.run()
+analyzer.analyze()
 ```
 
 ## Collectors ##
@@ -33,21 +34,21 @@ to the reference prior to measuring the RMSD.
 
 ### Examples ###
 ```python
+from pyvmd.analyzer import Analyzer
 from pyvmd.collectors import RMSDCollector
 from pyvmd.molecule import Molecule
-from pyvmd.traj import Loader
 
 ref = Molecule(0)  # Reference molecule for RMSD
-mol = Molecule(1)  # Molecule for trajectory loading. It will be modified.
+mol = Molecule(1)  # Molecule for analysis. It will be modified.
 rmsd = RMSDCollector(ref)
 rmsd.add_selection('protein')
 rmsd.add_selection('proint and backbone', 'backbone')  # Add selection under name 'backbone'
 
-loader = Loader(mol, ['foo.dcd', 'bar.dcd'])
+analyzer = Analyzer(mol, ['foo.dcd', 'bar.dcd'])
 # Set the callbacks to be run on every frame
-loader.add_collector(rmsd)
+analyzer.add_collector(rmsd)
 # Run the analysis
-loader.run()
+analyzer.analyze()
 
 # Dataset contains the data
 rmsd.dataset

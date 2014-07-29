@@ -3,9 +3,9 @@ Tests for data collectors.
 """
 from cStringIO import StringIO
 
+from pyvmd.analyzer import Analyzer
 from pyvmd.collectors import RMSDCollector
 from pyvmd.molecules import Molecule
-from pyvmd.traj import Loader
 
 from .utils import data, PyvmdTestCase
 
@@ -16,7 +16,7 @@ class TestRMSDCollector(PyvmdTestCase):
     """
     def test_rmsd(self):
         # Test RMSD collector returns correct results
-        # Set up the reference, collector and loader
+        # Set up the reference, collector and analyzer
         ref = Molecule.create()
         ref.load(data('water.psf'))
         ref.load(data('water.pdb'))
@@ -26,9 +26,9 @@ class TestRMSDCollector(PyvmdTestCase):
         rmsd.add_selection('all')
         rmsd.add_selection('all and name OH2')
         rmsd.add_selection('all and noh', 'noh')
-        loader = Loader(mol, [data('water.1.dcd')])
-        loader.add_collector(rmsd)
-        loader.run()
+        analyzer = Analyzer(mol, [data('water.1.dcd')])
+        analyzer.add_collector(rmsd)
+        analyzer.analyze()
 
         # Write data to check result
         buf = StringIO()
