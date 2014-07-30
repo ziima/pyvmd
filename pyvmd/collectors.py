@@ -6,7 +6,8 @@ import logging
 from . import measure
 from .atoms import Selection
 
-__all__ = ['Collector', 'FrameCollector', 'RMSDCollector', 'XCoordCollector', 'YCoordCollector', 'ZCoordCollector']
+__all__ = ['AngleCollector', 'Collector', 'DihedralCollector', 'DistanceCollector', 'FrameCollector', 'RMSDCollector',
+           'XCoordCollector', 'YCoordCollector', 'ZCoordCollector']
 
 
 LOGGER = logging.getLogger(__name__)
@@ -60,6 +61,8 @@ def _selection_center(selection_text, molecule):
     Utility method to get center of selection.
     """
     sel = Selection(selection_text, molecule)
+    if not len(sel):
+        raise ValueError("Selection '%s' doesn't match any atoms." % selection_text)
     return measure.center(sel)
 
 
@@ -100,6 +103,86 @@ class ZCoordCollector(BaseCoordCollector):
     """
     def collect(self, step):
         return _selection_center(self.selection, step.molecule)[2]
+
+
+class DistanceCollector(Collector):
+    """
+    Collects distance between two atoms or centers of atoms.
+    """
+    def __init__(self, selection1, selection2, name=None):
+        """
+        Creates distance collector.
+
+        @param selection1: Selection text for collector.
+        @param selection2: Selection text for collector.
+        """
+        assert isinstance(selection1, basestring)
+        assert isinstance(selection2, basestring)
+        super(DistanceCollector, self).__init__(name)
+        self.selection1 = selection1
+        self.selection2 = selection2
+
+    def collect(self, step):
+        center1 = _selection_center(self.selection1, step.molecule)
+        center2 = _selection_center(self.selection2, step.molecule)
+        return measure.coords_distance(center1, center2)
+
+
+class AngleCollector(Collector):
+    """
+    Collects angle between three atoms or centers of atoms.
+    """
+    def __init__(self, selection1, selection2, selection3, name=None):
+        """
+        Creates distance collector.
+
+        @param selection1: Selection text for collector.
+        @param selection2: Selection text for collector.
+        @param selection3: Selection text for collector.
+        """
+        assert isinstance(selection1, basestring)
+        assert isinstance(selection2, basestring)
+        assert isinstance(selection3, basestring)
+        super(AngleCollector, self).__init__(name)
+        self.selection1 = selection1
+        self.selection2 = selection2
+        self.selection3 = selection3
+
+    def collect(self, step):
+        center1 = _selection_center(self.selection1, step.molecule)
+        center2 = _selection_center(self.selection2, step.molecule)
+        center3 = _selection_center(self.selection3, step.molecule)
+        return measure.coords_angle(center1, center2, center3)
+
+
+class DihedralCollector(Collector):
+    """
+    Collects dihedral angle of four atoms or centers of atoms.
+    """
+    def __init__(self, selection1, selection2, selection3, selection4, name=None):
+        """
+        Creates distance collector.
+
+        @param selection1: Selection text for collector.
+        @param selection2: Selection text for collector.
+        @param selection3: Selection text for collector.
+        """
+        assert isinstance(selection1, basestring)
+        assert isinstance(selection2, basestring)
+        assert isinstance(selection3, basestring)
+        assert isinstance(selection4, basestring)
+        super(DihedralCollector, self).__init__(name)
+        self.selection1 = selection1
+        self.selection2 = selection2
+        self.selection3 = selection3
+        self.selection4 = selection4
+
+    def collect(self, step):
+        center1 = _selection_center(self.selection1, step.molecule)
+        center2 = _selection_center(self.selection2, step.molecule)
+        center3 = _selection_center(self.selection3, step.molecule)
+        center4 = _selection_center(self.selection4, step.molecule)
+        return measure.coords_dihedral(center1, center2, center3, center4)
 
 
 class RMSDCollector(Collector):
