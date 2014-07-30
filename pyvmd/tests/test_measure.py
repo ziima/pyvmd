@@ -4,7 +4,8 @@ Tests for measure.
 import VMD
 
 from pyvmd.atoms import Atom
-from pyvmd.measure import distance, angle, dihedral, improper
+from pyvmd.measure import angle, dihedral, distance
+
 from .utils import data, PyvmdTestCase
 
 
@@ -43,7 +44,7 @@ class TestMeasure(PyvmdTestCase):
         self.assertAlmostEqual(angle(b, a, c), 62.8130099)
 
     def test_dihedrals(self):
-        # Test `dihedral` and `improper` function
+        # Test `dihedral` function
         a = Atom(0)
         b = Atom(4)
         c = Atom(7)
@@ -53,8 +54,3 @@ class TestMeasure(PyvmdTestCase):
         self.assertAlmostEqual(dihedral(d, c, b, a), -80.113001)
         self.assertAlmostEqual(dihedral(a, c, b, d), 80.113001)
         self.assertAlmostEqual(dihedral(d, b, c, a), 80.113001)
-
-        self.assertAlmostEqual(improper(a, b, c, d), -80.113001)
-        self.assertAlmostEqual(improper(d, c, b, a), -80.113001)
-        self.assertAlmostEqual(improper(a, c, b, d), 80.113001)
-        self.assertAlmostEqual(improper(d, b, c, a), 80.113001)
