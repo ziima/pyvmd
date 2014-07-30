@@ -3,12 +3,12 @@ Utilities for simple strucural analysis.
 """
 import math
 
-from numpy import cross
+from numpy import array, cross
 from numpy.linalg import norm
 
-from .atoms import Atom
+from .atoms import Atom, SelectionBase
 
-__all__ = ['angle', 'dihedral', 'distance']
+__all__ = ['angle', 'center', 'dihedral', 'distance']
 
 
 def coords_distance(a, b):
@@ -93,3 +93,24 @@ def dihedral(a, b, c, d):
     assert isinstance(c, Atom)
     assert isinstance(d, Atom)
     return coords_dihedral(a.coords, b.coords, c.coords, d.coords)
+
+
+def center(selection):
+    """
+    Returns geometic center of selection or atom iterable.
+
+    @type selection: Selection, Residue or iterable of Atoms.
+    """
+    if hasattr(selection, 'atomsel'):
+        assert isinstance(selection, SelectionBase)
+        # It's a selection-like object, let VMD's atomsel do the job.
+        return array(selection.atomsel.center())
+    else:
+        # It's other kind of iterable, compute the center.
+        sum_coords = array((0., 0., 0.))
+        count = 0
+        for atom in selection:
+            assert isinstance(atom, Atom)
+            sum_coords += atom.coords
+            count += 1
+        return sum_coords / count

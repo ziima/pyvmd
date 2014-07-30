@@ -3,8 +3,8 @@ Tests for measure.
 """
 import VMD
 
-from pyvmd.atoms import Atom
-from pyvmd.measure import angle, dihedral, distance
+from pyvmd.atoms import Atom, Residue, Selection
+from pyvmd.measure import angle, center, dihedral, distance
 
 from .utils import data, PyvmdTestCase
 
@@ -54,3 +54,22 @@ class TestMeasure(PyvmdTestCase):
         self.assertAlmostEqual(dihedral(d, c, b, a), -80.113001)
         self.assertAlmostEqual(dihedral(a, c, b, d), 80.113001)
         self.assertAlmostEqual(dihedral(d, b, c, a), 80.113001)
+
+    def test_center(self):
+        # Test `center` function.
+        sel = Selection('all')
+        # Center of selection
+        self.assertAlmostEqualSeqs(list(center(sel)), [-0.0001906, 0.0004762, -0.0001429])
+
+        res = Residue(0)
+        # Center of residue
+        self.assertAlmostEqualSeqs(list(center(res)), [-1.3403333, 2.1406667, 0.967])
+
+        atom = Atom(0)
+        # Center of atom - atom coordinates
+        self.assertAlmostEqualSeqs(list(center(atom)), [-1.493, 1.9, 1.28])
+
+        # Center of atom iterables
+        # The manuall computation seems to differ a bit from the `atomsel.center`
+        self.assertAlmostEqualSeqs(list(center(iter(sel))), [-0.0001905, 0.0004762, -0.0001429])
+        self.assertAlmostEqualSeqs(list(center((Atom(i) for i in xrange(10)))), [-0.146, 0.3756, 0.3972])
