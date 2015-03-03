@@ -1,4 +1,5 @@
 # Topics #
  * [Molecules](molecules.md)
  * [Atoms](atoms.md)
- * [Trajectory analysis](trajectory.md)
+ * [Measurements](measure.md)
+ * [Trajectory analysis](analysis.md)

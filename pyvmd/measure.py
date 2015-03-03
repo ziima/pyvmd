@@ -2,24 +2,22 @@
 Utilities for simple strucural analysis.
 """
 import math
-from numpy import cross, ndarray
+
+from numpy import array, cross
 from numpy.linalg import norm
 
-from .atoms import Atom
+from .atoms import Atom, SelectionBase
 
-__all__ = ['angle', 'dihedral', 'distance', 'improper']
+__all__ = ['angle', 'center', 'dihedral', 'distance']
 
 
-def _vector_angle(a, b):
+def coords_distance(a, b):
     """
-    Returns angle (in degrees) between two vectors.
+    Returns distance between two coordinates.
     """
-    assert isinstance(a, ndarray)
-    assert isinstance(b, ndarray)
-    cross_prod = cross(a, b)
-    sine = math.sqrt(cross_prod.dot(cross_prod))
-    cosine = a.dot(b)
-    return math.degrees(math.atan2(sine, cosine))
+    assert a.shape == (3, )
+    assert b.shape == (3, )
+    return norm(a - b)
 
 
 def distance(a, b):
@@ -28,8 +26,24 @@ def distance(a, b):
     """
     assert isinstance(a, Atom)
     assert isinstance(b, Atom)
-    assert a != b
-    return norm(a.coords - b.coords)
+    return coords_distance(a.coords, b.coords)
+
+
+def coords_angle(a, b, c):
+    """
+    Returns angle between three coordinates a--b--c in degrees.
+    """
+    assert a.shape == (3, )
+    assert b.shape == (3, )
+    assert c.shape == (3, )
+    # Get vectors b-->a and b-->c
+    vec_1 = a - b
+    vec_2 = c - b
+    # Compute angle between the two vectors
+    cross_prod = cross(vec_1, vec_2)
+    sine = math.sqrt(cross_prod.dot(cross_prod))
+    cosine = vec_1.dot(vec_2)
+    return math.degrees(math.atan2(sine, cosine))
 
 
 def angle(a, b, c):
@@ -39,32 +53,22 @@ def angle(a, b, c):
     assert isinstance(a, Atom)
     assert isinstance(b, Atom)
     assert isinstance(c, Atom)
-    assert a != b and a != c and b != c
-    coords_1 = a.coords
-    coords_2 = b.coords
-    coords_3 = c.coords
-    vec_1 = coords_1 - coords_2
-    vec_2 = coords_3 - coords_2
-    return _vector_angle(vec_1, vec_2)
+    return coords_angle(a.coords, b.coords, c.coords)
 
 
-def dihedral(a, b, c, d):
+def coords_dihedral(a, b, c, d):
     """
-    Returns dihedral angle of four atoms a--b--c--d in degrees.
+    Returns dihedral angle of four coordinates a--b--c--d in degrees.
     """
-    assert isinstance(a, Atom)
-    assert isinstance(b, Atom)
-    assert isinstance(c, Atom)
-    assert isinstance(d, Atom)
-    assert a != b and a != c and a != d and b != c and b != d and c != d
-    coords_1 = a.coords
-    coords_2 = b.coords
-    coords_3 = c.coords
-    coords_4 = d.coords
-    vec_1 = coords_2 - coords_1
-    vec_2 = coords_3 - coords_2
-    vec_3 = coords_4 - coords_3
-
+    assert a.shape == (3, )
+    assert b.shape == (3, )
+    assert c.shape == (3, )
+    assert d.shape == (3, )
+    # Get vectors a-->b, b-->c and c-->d
+    vec_1 = b - a
+    vec_2 = c - b
+    vec_3 = d - c
+    # Compute the dihedral of the three vectors
     norm_1 = cross(vec_1, vec_2)
     norm_2 = cross(vec_2, vec_3)
     sine = norm_1.dot(vec_3) * norm(vec_2)
@@ -72,12 +76,41 @@ def dihedral(a, b, c, d):
     return math.degrees(math.atan2(sine, cosine))
 
 
-def improper(a, b, c, d):
+def dihedral(a, b, c, d):
     """
-    Returns improper dihedral angle of four atoms in degrees.
+    Returns dihedral or improper dihedral angle of four atoms in degrees.
+
+    Atoms are considered in structure a--b--c--d for dihedral angle or
 
     a--b--c
        |
        d
+
+    for improper dihedral angle.
     """
-    return dihedral(a, b, c, d)
+    assert isinstance(a, Atom)
+    assert isinstance(b, Atom)
+    assert isinstance(c, Atom)
+    assert isinstance(d, Atom)
+    return coords_dihedral(a.coords, b.coords, c.coords, d.coords)
+
+
+def center(selection):
+    """
+    Returns geometic center of selection or atom iterable.
+
+    @type selection: Selection, Residue or iterable of Atoms.
+    """
+    if hasattr(selection, 'atomsel'):
+        assert isinstance(selection, SelectionBase)
+        # It's a selection-like object, let VMD's atomsel do the job.
+        return array(selection.atomsel.center())
+    else:
+        # It's other kind of iterable, compute the center.
+        sum_coords = array((0., 0., 0.))
+        count = 0
+        for atom in selection:
+            assert isinstance(atom, Atom)
+            sum_coords += atom.coords
+            count += 1
+        return sum_coords / count
