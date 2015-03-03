@@ -3,3 +3,4 @@
  * [Atoms](atoms.md)
  * [Measurements](measure.md)
  * [Trajectory analysis](analysis.md)
+ * [Labels](labels.md)
