@@ -190,7 +190,7 @@ class UniqueSelectionBase(SelectionBase):
 
     def _setter(self, name, value):
         # The setter should be used only for values which are the same through the selection.
-        return self.atomsel.set(name, value)
+        self.atomsel.set(name, value)
 
 
 class Atom(UniqueSelectionBase):
@@ -256,7 +256,7 @@ class Atom(UniqueSelectionBase):
         return self._getter('x')
 
     def _set_x(self, value):
-        return self._setter('x', value)
+        self._setter('x', value)
 
     x = property(_get_x, _set_x, doc="Coordinate in 'x' dimension.")
 
@@ -264,7 +264,7 @@ class Atom(UniqueSelectionBase):
         return self._getter('y')
 
     def _set_y(self, value):
-        return self._setter('y', value)
+        self._setter('y', value)
 
     y = property(_get_y, _set_y, doc="Coordinate in 'y' dimension.")
 
@@ -272,7 +272,7 @@ class Atom(UniqueSelectionBase):
         return self._getter('z')
 
     def _set_z(self, value):
-        return self._setter('z', value)
+        self._setter('z', value)
 
     z = property(_get_z, _set_z, doc="Coordinate in 'z' dimension.")
 
@@ -291,7 +291,7 @@ class Atom(UniqueSelectionBase):
         return self._getter('name')
 
     def _set_name(self, value):
-        return self._setter('name', value)
+        self._setter('name', value)
 
     name = property(_get_name, _set_name, doc="Atom name")
 
@@ -299,7 +299,7 @@ class Atom(UniqueSelectionBase):
         return self._getter('type')
 
     def _set_type(self, value):
-        return self._setter('type', value)
+        self._setter('type', value)
 
     type = property(_get_type, _set_type, doc="Atom type")
 
@@ -347,7 +347,7 @@ class Residue(IterableSelectionMixin, UniqueSelectionBase):
         return self._getter('resid')
 
     def _set_resid(self, value):
-        return self._setter('resid', value)
+        self._setter('resid', value)
 
     number = property(_get_resid, _set_resid, doc="Residue number")
 
@@ -355,6 +355,6 @@ class Residue(IterableSelectionMixin, UniqueSelectionBase):
         return self._getter('resname')
 
     def _set_name(self, value):
-        return self._setter('resname', value)
+        self._setter('resname', value)
 
     name = property(_get_name, _set_name, doc="Residue name")
