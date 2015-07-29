@@ -77,17 +77,41 @@ class TestAtom(PyvmdTestCase):
 
     def test_comparison(self):
         # Test atom comparison
-        VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_1 = Molecule(molid_1)
+        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_2 = Molecule(molid_2)
+        VMD.molecule.set_top(molid_1)
+
         atom1 = Atom(0)
         atom2 = Atom(0)
         other = Atom(1)
         frame = Atom(0, frame=0)
+        same_mol = Atom(0, mol_1)
+        other_mol = Atom(0, mol_2)
 
         self.assertEqual(atom1, atom1)
         self.assertEqual(atom1, atom2)
+        self.assertEqual(atom1, same_mol)
         self.assertNotEqual(atom1, other)
         self.assertNotEqual(atom2, other)
         self.assertNotEqual(atom1, frame)
+        self.assertNotEqual(atom1, other_mol)
+
+    def test_hashability(self):
+        # Test atoms are correctly understood by sets
+        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_1 = Molecule(molid_1)
+        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_2 = Molecule(molid_2)
+        VMD.molecule.set_top(molid_1)
+
+        self.assertEqual({Atom(0), Atom(0)}, {Atom(0)})
+        self.assertEqual({Atom(0, frame=0), Atom(0, frame=0)}, {Atom(0, frame=0)})
+        self.assertEqual({Atom(0), Atom(0, frame=0)}, {Atom(0), Atom(0, frame=0)})
+        self.assertEqual({Atom(0, mol_1), Atom(0, mol_1)}, {Atom(0, mol_1)})
+        self.assertEqual({Atom(0, mol_1), Atom(0, mol_2)}, {Atom(0, mol_1), Atom(0, mol_2)})
+        self.assertEqual({Atom(0), Atom(0, mol_1)}, {Atom(0)})
 
     def test_frame_property(self):
         # Test frame property works correctly
@@ -201,17 +225,41 @@ class TestResidue(PyvmdTestCase):
 
     def test_comparison(self):
         # Test residue comparison
-        VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_1 = Molecule(molid_1)
+        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_2 = Molecule(molid_2)
+        VMD.molecule.set_top(molid_1)
+
         res1 = Residue(0)
         res2 = Residue(0)
         other = Residue(1)
         frame = Residue(0, frame=0)
+        same_mol = Residue(0, mol_1)
+        other_mol = Residue(0, mol_2)
 
         self.assertEqual(res1, res1)
         self.assertEqual(res1, res2)
+        self.assertEqual(res1, same_mol)
         self.assertNotEqual(res1, other)
         self.assertNotEqual(res2, other)
         self.assertNotEqual(res1, frame)
+        self.assertNotEqual(res1, other_mol)
+
+    def test_hashability(self):
+        # Test atoms are correctly understood by sets
+        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_1 = Molecule(molid_1)
+        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_2 = Molecule(molid_2)
+        VMD.molecule.set_top(molid_1)
+
+        self.assertEqual({Residue(0), Residue(0)}, {Residue(0)})
+        self.assertEqual({Residue(0, frame=0), Residue(0, frame=0)}, {Residue(0, frame=0)})
+        self.assertEqual({Residue(0), Residue(0, frame=0)}, {Residue(0), Residue(0, frame=0)})
+        self.assertEqual({Residue(0, mol_1), Residue(0, mol_1)}, {Residue(0, mol_1)})
+        self.assertEqual({Residue(0, mol_1), Residue(0, mol_2)}, {Residue(0, mol_1), Residue(0, mol_2)})
+        self.assertEqual({Residue(0), Residue(0, mol_1)}, {Residue(0)})
 
     def test_frame_property(self):
         # Test frame property works correctly

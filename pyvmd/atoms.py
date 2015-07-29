@@ -171,6 +171,10 @@ class UniqueSelectionBase(SelectionBase):
     def __repr__(self):
         return "<%s: %d of '%r' at %d>" % (type(self).__name__, self._index, self._molecule, self._frame)
 
+    def __hash__(self):
+        # We can use unique identifier for objects which have one.
+        return self._index
+
     def __eq__(self, other):
         return type(self) == type(other) and self._index == other.index and self._molecule == other.molecule and \
             self._frame == other.frame
