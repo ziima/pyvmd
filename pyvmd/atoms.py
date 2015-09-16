@@ -197,6 +197,17 @@ class UniqueSelectionBase(SelectionBase):
         self.atomsel.set(name, value)
 
 
+def _object_property(keyword, doc):
+    """Utility function to map VMD keywords to objects properties."""
+    def _getter_wrapper(self):
+        return self._getter(keyword)
+
+    def _setter_wrapper(self, value):
+        self._setter(keyword, value)
+
+    return property(_getter_wrapper, _setter_wrapper, doc=doc)
+
+
 class Atom(UniqueSelectionBase):
     """
     Atom representation.
@@ -256,29 +267,9 @@ class Atom(UniqueSelectionBase):
     ############################################################################
     # Atom's data
     # Coordinates
-    def _get_x(self):
-        return self._getter('x')
-
-    def _set_x(self, value):
-        self._setter('x', value)
-
-    x = property(_get_x, _set_x, doc="Coordinate in 'x' dimension.")
-
-    def _get_y(self):
-        return self._getter('y')
-
-    def _set_y(self, value):
-        self._setter('y', value)
-
-    y = property(_get_y, _set_y, doc="Coordinate in 'y' dimension.")
-
-    def _get_z(self):
-        return self._getter('z')
-
-    def _set_z(self, value):
-        self._setter('z', value)
-
-    z = property(_get_z, _set_z, doc="Coordinate in 'z' dimension.")
+    x = _object_property('x', doc="Coordinate in 'x' dimension.")
+    y = _object_property('y', doc="Coordinate in 'y' dimension.")
+    z = _object_property('z', doc="Coordinate in 'z' dimension.")
 
     def _get_coords(self):
         #XXX: This is unintuitive, but very fast. The atom's center is the location of the atom.
@@ -291,21 +282,8 @@ class Atom(UniqueSelectionBase):
     coords = property(_get_coords, _set_coords, doc="Array of (x, y, z) coordinates.")
 
     # Other data
-    def _get_name(self):
-        return self._getter('name')
-
-    def _set_name(self, value):
-        self._setter('name', value)
-
-    name = property(_get_name, _set_name, doc="Atom name")
-
-    def _get_type(self):
-        return self._getter('type')
-
-    def _set_type(self, value):
-        self._setter('type', value)
-
-    type = property(_get_type, _set_type, doc="Atom type")
+    name = _object_property('name', doc="Atom name.")
+    type = _object_property('type', doc="Atom type.")
 
     ############################################################################
     # Connections to other objects
@@ -347,18 +325,5 @@ class Residue(IterableSelectionMixin, UniqueSelectionBase):
 
     ############################################################################
     # Residue's data
-    def _get_resid(self):
-        return self._getter('resid')
-
-    def _set_resid(self, value):
-        self._setter('resid', value)
-
-    number = property(_get_resid, _set_resid, doc="Residue number")
-
-    def _get_name(self):
-        return self._getter('resname')
-
-    def _set_name(self, value):
-        self._setter('resname', value)
-
-    name = property(_get_name, _set_name, doc="Residue name")
+    number = _object_property('resid', doc="Residue number.")
+    name = _object_property('resname', doc="Residue name.")
