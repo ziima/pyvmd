@@ -30,6 +30,12 @@ class TestAtom(PyvmdTestCase):
         self.assertAlmostEqualSeqs(list(atom.coords), [-1.493, 1.9, 1.28])
         self.assertEqual(atom.name, 'OH2')
         self.assertEqual(atom.type, 'OT')
+        self.assertEqual(atom.element, 'O')
+        self.assertAlmostEqual(atom.beta, 0.0)
+        self.assertAlmostEqual(atom.occupancy, 1.0)
+        self.assertAlmostEqual(atom.mass, 15.9994, places=6)
+        self.assertAlmostEqual(atom.charge, -0.834)
+        self.assertAlmostEqual(atom.radius, 1.52)
         self.assertEqual(list(atom.bonded), [Atom(1), Atom(2)])
         self.assertEqual(atom.residue, Residue(0))
 
@@ -74,6 +80,24 @@ class TestAtom(PyvmdTestCase):
         atom.type = 'N18'
         self.assertEqual(atom.type, 'N18')
         self.assertEqual(sel.get('type'), ['N18'])
+        atom.element = 'Y'
+        self.assertEqual(atom.element, 'Y')
+        self.assertEqual(sel.get('element'), ['Y'])
+        atom.beta = 2.5
+        self.assertEqual(atom.beta, 2.5)
+        self.assertEqual(sel.get('beta'), [2.5])
+        atom.occupancy = -3.8
+        self.assertAlmostEqual(atom.occupancy, -3.8)
+        self.assertAlmostEqualSeqs(sel.get('occupancy'), [-3.8])
+        atom.mass = 42.89
+        self.assertAlmostEqual(atom.mass, 42.89, places=5)
+        self.assertAlmostEqualSeqs(sel.get('mass'), [42.89], places=5)
+        atom.charge = -7.05
+        self.assertAlmostEqual(atom.charge, -7.05, places=6)
+        self.assertAlmostEqualSeqs(sel.get('charge'), [-7.05], places=6)
+        atom.radius = 4.9
+        self.assertAlmostEqual(atom.radius, 4.9, places=6)
+        self.assertAlmostEqualSeqs(sel.get('radius'), [4.9], places=6)
 
     def test_comparison(self):
         # Test atom comparison

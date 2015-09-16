@@ -53,6 +53,24 @@ Atom(789) in sel  #>>> True
 Object representing the basic element of a structure. If not defined, atoms are searched in the top molecule and uses
 its frame.
 
+### Atom properties table ###
+| Property  | Type                   | VMD keyword |
+|-----------|------------------------|-------------|
+| index     | `int`                  | index       |
+| x         | `float`                | x           |
+| y         | `float`                | y           |
+| z         | `float`                | z           |
+| coords    | `numpy.array(x, y, z)` |             |
+| name      | `str`                  | name        |
+| type      | `str`                  | type        |
+| element   | `str`                  | element     |
+| beta      | `float`                | beta        |
+| occupancy | `float`                | occupancy   |
+| mass      | `float`                | mass        |
+| charge    | `float`                | charge      |
+| radius    | `float`                | radius      |
+| residue   | `pyvmd.Residue`        |             |
+
 ### Examples ###
 ```python
 from pyvmd.atoms import Atom
@@ -92,6 +110,13 @@ atom.residue  #>>> Residue(25)
 ## Residue ##
 Object representing single residue. As for atoms, if not defined links to top molecule and uses
 its frame.
+
+### Residue properties table ###
+| Property | Type                   | VMD keyword |
+|----------|------------------------|-------------|
+| index    | `int`                  | residue     |
+| name     | `str`                  | resname     |
+| number   | `int`                  | resid       |
 
 ### Examples ###
 ```python
