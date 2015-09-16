@@ -284,6 +284,12 @@ class Atom(UniqueSelectionBase):
     # Other data
     name = _object_property('name', doc="Atom name.")
     type = _object_property('type', doc="Atom type.")
+    element = _object_property('element', doc="Atom element.")
+    beta = _object_property('beta', doc="Atom beta factor.")
+    occupancy = _object_property('occupancy', doc="Atom occupancy.")
+    mass = _object_property('mass', doc="Atom mass.")
+    charge = _object_property('charge', doc="Atom charge.")
+    radius = _object_property('radius', doc="Atom radius.")
 
     ############################################################################
     # Connections to other objects
