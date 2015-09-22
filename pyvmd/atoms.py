@@ -89,7 +89,7 @@ class IterableSelectionMixin(object):
 
     def __contains__(self, atom):
         assert isinstance(atom, Atom)
-        return self.atomsel[atom.index]
+        return bool(self.molecule == atom.molecule and self.frame == atom.frame and self.atomsel[atom.index])
 
 
 class Selection(IterableSelectionMixin, SelectionBase):
