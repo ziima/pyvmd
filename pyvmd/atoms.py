@@ -9,7 +9,7 @@ from VMD import molecule as _molecule
 
 from .molecules import Molecule, MOLECULES
 
-__all__ = ['Atom', 'Residue', 'Selection', 'NOW']
+__all__ = ['Atom', 'Chain', 'Residue', 'Segment' 'Selection', 'NOW']
 
 
 # Constant which always references active frame
@@ -62,6 +62,15 @@ class SelectionBase(object):
         Returns respective 'VMD.atomsel' instance. Derived class must implement this property.
         """
         raise NotImplementedError
+
+    # Basic getters and setters for selection data
+    def _getter(self, name):
+        # The getter should be used only for values which are the same through the selection.
+        return self.atomsel.get(name)[0]
+
+    def _setter(self, name, value):
+        # The setter should be used only for values which are the same through the selection.
+        self.atomsel.set(name, value)
 
 
 class IterableSelectionMixin(object):
@@ -147,9 +156,12 @@ class Selection(IterableSelectionMixin, SelectionBase):
                 for a, b in itertools.izip(atoms_self, atoms_other))
 
 
-class UniqueSelectionBase(SelectionBase):
+class StaticSelection(SelectionBase):
     """
-    Base class for selection-based objects which have unique identification.
+    Base class for `Atom` and `Residue`.
+
+    Atoms and residues are static objects in VMD. They can't be created or deleted. They have unique identifier which
+    does not change. Atoms can not be moved to a different residue.
     """
     # Large amounts of these objects can be created, slots has some performance benefits.
     __slots__ = ('_index', )
@@ -165,7 +177,7 @@ class UniqueSelectionBase(SelectionBase):
         @type frame: Non-negative integer or NOW
         """
         assert isinstance(index, int) and index >= 0
-        super(UniqueSelectionBase, self).__init__(molecule=molecule, frame=frame)
+        super(StaticSelection, self).__init__(molecule=molecule, frame=frame)
         self._index = index
 
     def __repr__(self):
@@ -187,15 +199,6 @@ class UniqueSelectionBase(SelectionBase):
         "Index"
         return self._index
 
-    # Basic getters and setters for selection data
-    def _getter(self, name):
-        # The getter should be used only for values which are the same through the selection.
-        return self.atomsel.get(name)[0]
-
-    def _setter(self, name, value):
-        # The setter should be used only for values which are the same through the selection.
-        self.atomsel.set(name, value)
-
 
 def _object_property(keyword, doc):
     """Utility function to map VMD keywords to objects properties."""
@@ -208,7 +211,7 @@ def _object_property(keyword, doc):
     return property(_getter_wrapper, _setter_wrapper, doc=doc)
 
 
-class Atom(UniqueSelectionBase):
+class Atom(StaticSelection):
     """
     Atom representation.
 
@@ -307,8 +310,26 @@ class Atom(UniqueSelectionBase):
         """
         return Residue(self._getter('residue'), self._molecule, self._frame)
 
+    def _get_chain(self):
+        return Chain(self._getter('chain'), self._molecule, self._frame)
 
-class Residue(IterableSelectionMixin, UniqueSelectionBase):
+    def _set_chain(self, chain):
+        assert isinstance(chain, Chain)
+        self._setter('chain', chain.name)
+
+    chain = property(_get_chain, _set_chain, doc="Atom chain")
+
+    def _get_segment(self):
+        return Segment(self._getter('segname'), self._molecule, self._frame)
+
+    def _set_segment(self, segment):
+        assert isinstance(segment, Segment)
+        self._setter('segname', segment.name)
+
+    segment = property(_get_segment, _set_segment, doc="Atom segment")
+
+
+class Residue(IterableSelectionMixin, StaticSelection):
     """
     Residue representation.
 
@@ -333,3 +354,98 @@ class Residue(IterableSelectionMixin, UniqueSelectionBase):
     # Residue's data
     number = _object_property('resid', doc="Residue number.")
     name = _object_property('resname', doc="Residue name.")
+
+
+class DynamicSelection(IterableSelectionMixin, SelectionBase):
+    """
+    Base class for `Chain` and `Segment`.
+
+    Unlike residues, chains and segments are not static in VMD. They can be created and deleted. They have identifiers,
+    but they can be changed. Atoms can be moved between chains and segments.
+    """
+    # Large amounts of these objects can be created, slots has some performance benefits.
+    __slots__ = ('_name', )
+
+    def __init__(self, name, molecule=None, frame=NOW):
+        """
+        Creates the object.
+
+        @param name: Name of the selection. Also acts as an identifier.
+        @param molecule: Selection's molecule. Top if not provider.
+        @type molecule: Molecule or None
+        @param frame: Selection's frame
+        @type frame: Non-negative integer or NOW
+        """
+        assert isinstance(name, str)
+        super(DynamicSelection, self).__init__(molecule=molecule, frame=frame)
+        self._name = name
+
+    def __repr__(self):
+        return "<%s: '%s' of '%r' at %d>" % (type(self).__name__, self.name, self._molecule, self._frame)
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.name == other.name and self._molecule == other.molecule and \
+            self._frame == other.frame
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class Chain(DynamicSelection):
+    """
+    Chain representation.
+
+    This class is a proxy to a chain in molecule loaded into VMD.
+    The chain is identified by 'chain' value from VMD.
+    """
+    # Large amounts of these objects can be created, slots has some performance benefits.
+    __slots__ = ()
+
+    @property
+    def atomsel(self):
+        """
+        Returns respective 'VMD.atomsel' instance.
+        """
+        if self._atomsel is None:
+            self._atomsel = _atomsel('chain "%s"' % self.name, frame=self._frame, molid=self._molecule.molid)
+        return self._atomsel
+
+    def _get_name(self):
+        return self._name
+
+    def _set_name(self, value):
+        # Rename the segment in all its atoms
+        self._setter('chain', value)
+        self._name = value
+
+    name = property(_get_name, _set_name, doc="Chain name")
+
+
+class Segment(DynamicSelection):
+    """
+    Segment representation.
+
+    This class is a proxy to a segment in molecule loaded into VMD.
+    The segment is identified by 'segname' value from VMD.
+    """
+    # Large amounts of these objects can be created, slots has some performance benefits.
+    __slots__ = ()
+
+    @property
+    def atomsel(self):
+        """
+        Returns respective 'VMD.atomsel' instance.
+        """
+        if self._atomsel is None:
+            self._atomsel = _atomsel('segname "%s"' % self.name, frame=self._frame, molid=self._molecule.molid)
+        return self._atomsel
+
+    def _get_name(self):
+        return self._name
+
+    def _set_name(self, value):
+        # Rename the segment in all its atoms
+        self._setter('segname', value)
+        self._name = value
+
+    name = property(_get_name, _set_name, doc="Segment name")

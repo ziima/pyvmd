@@ -1,7 +1,7 @@
 # Atoms #
 
 The most used objects in VMD are probably atoms and selections. Pyvmd provides interface which emulates chemical
-objects, such as atoms and residues.
+objects, such as atoms, residues, chains and segments.
 
 ## Common features ##
 All atom based objects has common features. These are:
@@ -18,6 +18,8 @@ All atom based objects has common features. These are:
     `in` returns whether atom belongs to a object and object also works as iterable over its atoms.
  * Comparison
   - All objects have defined equality and inequality operators.
+ * Hashability
+  - Objects `Atom` and `Residue` are hashable, so they can be used in sets or as keys in dictionaries.
 
 ### Examples ###
 ```python
@@ -50,8 +52,7 @@ Atom(789) in sel  #>>> True
 ```
 
 ## Atom ##
-Object representing the basic element of a structure. If not defined, atoms are searched in the top molecule and uses
-its frame.
+Object representing the basic element of a structure.
 
 ### Atom properties table ###
 | Property  | Type                   | VMD keyword |
@@ -70,6 +71,8 @@ its frame.
 | charge    | `float`                | charge      |
 | radius    | `float`                | radius      |
 | residue   | `pyvmd.Residue`        |             |
+| chain     | `pyvmd.Chain`          |             |
+| segment   | `pyvmd.Segment`        |             |
 
 ### Examples ###
 ```python
@@ -105,11 +108,20 @@ for bonded in atom.bonded:
 
 # Get atom's residue
 atom.residue  #>>> Residue(25)
+
+# Get atom's chain
+atom.chain  #>>> Chain('C')
+# Move atom to a different chain
+atom.chain = Chain('D')
+
+# Get atom's segment
+atom.segment  #>>> Segment('S')
+# Move atom to a different segment
+atom.segment = Segment('U')
 ```
 
 ## Residue ##
-Object representing single residue. As for atoms, if not defined links to top molecule and uses
-its frame.
+Object representing single residue.
 
 ### Residue properties table ###
 | Property | Type                   | VMD keyword |
@@ -131,6 +143,30 @@ res.index  #>>> 42
 res.number  #>>> 157
 # Change the number of the residue
 res.number = 456
+```
+
+## Chains and segments ##
+These objects represent single chain and segment, respectively.
+
+### Examples ###
+```python
+from pyvmd.atoms import Chain, Segment
+
+# Find chain using its name (`chain` value)
+chain = Chain('A')
+
+# Get name of the chain, the `chain` value.
+chain.name  #>>> 'A'
+# Change the name of the chain
+chain.name = 'B'
+
+# Find segment using its name (`segname` value)
+segment = Segment('S')
+
+# Get name of the segment, the `segname` value.
+segment.name  #>>> 'S'
+# Change the name of the segment
+segment.name = 'U'
 ```
 
 ## Selections ##
