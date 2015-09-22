@@ -9,6 +9,229 @@ from pyvmd.molecules import Molecule
 from .utils import data, PyvmdTestCase
 
 
+class MoleculePropertyTest(PyvmdTestCase):
+    """
+    Test `molecule` property in atom objects.
+    """
+    def _test_molecule_property(self, obj_type, obj_id):
+        # Test molecule property works correctly
+        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_1 = Molecule(molid_1)
+        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_2 = Molecule(molid_2)
+        VMD.molecule.set_top(molid_1)
+
+        # If molecule is not defined, top molecule is used
+        obj = obj_type(obj_id)
+        self.assertEqual(obj.molecule, mol_1)
+
+        # If molecule is defined, it is used
+        obj = obj_type(obj_id, mol_2)
+        self.assertEqual(obj.molecule, mol_2)
+
+        # Molecule can't be changed
+        with self.assertRaises(AttributeError):
+            obj.molecule = mol_2
+
+    def test_atom(self):
+        self._test_molecule_property(Atom, 0)
+
+    def test_residue(self):
+        self._test_molecule_property(Residue, 0)
+
+    def test_chain(self):
+        self._test_molecule_property(Chain, 'W')
+
+    def test_segment(self):
+        self._test_molecule_property(Segment, 'W1')
+
+    def test_selection(self):
+        self._test_molecule_property(Selection, 'index < 10')
+
+
+class FramePropertyTest(PyvmdTestCase):
+    """
+    Test `frame` property in atom objects.
+    """
+    def _test_frame_property(self, obj_type, obj_id, getter):
+        # Test frame property works correctly
+        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        VMD.molecule.read(molid, 'dcd', data('water.1.dcd'), waitfor=-1)
+        mol = Molecule(molid)
+        # To check frame works correctly, check the 'x' coordinate of the object's first atom.
+
+        # Create residue linked to the molecule frame
+        obj = obj_type(obj_id)
+        self.assertEqual(obj.frame, NOW)
+        self.assertAlmostEqual(getter(obj), -1.3421925)
+        # Change the molecule frame, the object will follow
+        mol.frame = 0
+        self.assertEqual(obj.frame, NOW)
+        self.assertAlmostEqual(getter(obj), -1.493)
+        mol.frame = 4
+        self.assertEqual(obj.frame, NOW)
+        self.assertAlmostEqual(getter(obj), -1.4773947)
+
+        # Define the object's frame
+        obj.frame = 9
+        self.assertEqual(obj.frame, 9)
+        self.assertAlmostEqual(getter(obj), -1.4120502)
+        # Change the molecule frame, the object keeps its frame
+        mol.frame = 11
+        self.assertEqual(obj.frame, 9)
+        self.assertAlmostEqual(getter(obj), -1.4120502)
+
+        # Set the object's frame back to the molecule's frame
+        obj.frame = NOW
+        self.assertEqual(obj.frame, NOW)
+        self.assertAlmostEqual(getter(obj), -1.3674825)
+
+    def test_atom(self):
+        self._test_frame_property(Atom, 0, lambda obj: obj.x)
+
+    def test_residue(self):
+        self._test_frame_property(Residue, 0, lambda obj: list(obj)[0].x)
+
+    def test_chain(self):
+        self._test_frame_property(Chain, 'W', lambda obj: list(obj)[0].x)
+
+    def test_segment(self):
+        self._test_frame_property(Segment, 'W1', lambda obj: list(obj)[0].x)
+
+    def test_selection(self):
+        self._test_frame_property(Selection, 'index < 10', lambda obj: list(obj)[0].x)
+
+
+class ComparisonTest(PyvmdTestCase):
+    """
+    Test comparison of atom objects.
+    """
+    def _test_equality(self, obj_type, obj_id1, obj_id2):
+        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_1 = Molecule(molid_1)
+        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_2 = Molecule(molid_2)
+        VMD.molecule.set_top(molid_1)
+
+        obj1 = obj_type(obj_id1)
+        obj2 = obj_type(obj_id1)
+        other = obj_type(obj_id2)
+        frame = obj_type(obj_id1, frame=0)
+        same_mol = obj_type(obj_id1, mol_1)
+        other_mol = obj_type(obj_id1, mol_2)
+
+        self.assertEqual(obj1, obj1)
+        self.assertEqual(obj1, obj2)
+        self.assertEqual(obj1, same_mol)
+        self.assertNotEqual(obj1, other)
+        self.assertNotEqual(obj2, other)
+        self.assertNotEqual(obj1, frame)
+        self.assertNotEqual(obj1, other_mol)
+
+    def test_atom(self):
+        self._test_equality(Atom, 0, 1)
+
+    def test_residue(self):
+        self._test_equality(Residue, 0, 1)
+
+    def test_chain(self):
+        self._test_equality(Chain, 'W', 'X')
+
+    def test_segment(self):
+        self._test_equality(Segment, 'W1', 'X')
+
+    # Selection object doesn't have equality defined
+
+    def test_different_objects(self):
+        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+
+        self.assertNotEqual(Atom(0), Residue(0))
+        self.assertNotEqual(Chain('X'), Segment('X'))
+
+
+class HashabilityTest(PyvmdTestCase):
+    """
+    Test hashability of atoms and residues.
+    """
+    def _test_hashability(self, obj_type):
+        # Test objects are correctly understood by sets
+        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_1 = Molecule(molid_1)
+        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_2 = Molecule(molid_2)
+        VMD.molecule.set_top(molid_1)
+
+        # Same objects
+        self.assertEqual({obj_type(0), obj_type(0)}, {obj_type(0)})
+        self.assertEqual({obj_type(0, frame=0), obj_type(0, frame=0)}, {obj_type(0, frame=0)})
+        self.assertEqual({obj_type(0, mol_1), obj_type(0, mol_1)}, {obj_type(0, mol_1)})
+        # Top molecule explicitely and implicitly
+        self.assertEqual({obj_type(0), obj_type(0, mol_1)}, {obj_type(0)})
+        # Frame differs
+        self.assertEqual({obj_type(0), obj_type(0, frame=0)}, {obj_type(0), obj_type(0, frame=0)})
+        # Molecule differs
+        self.assertEqual({obj_type(0, mol_1), obj_type(0, mol_2)}, {obj_type(0, mol_1), obj_type(0, mol_2)})
+
+    def test_atom(self):
+        self._test_hashability(Atom)
+
+    def test_residue(self):
+        self._test_hashability(Residue)
+
+
+class ContainerTest(PyvmdTestCase):
+    """
+    Test container API for objects which supports it.
+    """
+    def _test_container(self, obj_type, obj_id, length, atom_ids, out_ids):
+        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_1 = Molecule(molid_1)
+        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        mol_2 = Molecule(molid_2)
+        VMD.molecule.set_top(molid_1)
+
+        obj = obj_type(obj_id)
+
+        # Check __len__
+        self.assertEqual(len(obj), length)
+
+        # Check __iter__
+        self.assertEqual(list(obj), [Atom(i) for i in atom_ids])
+
+        # Check __contains__
+        for atom_id in atom_ids:
+            self.assertIn(Atom(atom_id), obj)
+        for atom_id in atom_ids:
+            # Frame differs
+            self.assertNotIn(Atom(atom_id, frame=0), obj)
+        for atom_id in atom_ids:
+            # Molecule differs
+            self.assertNotIn(Atom(atom_id, mol_2), obj)
+        for atom_id in out_ids:
+            self.assertNotIn(Atom(atom_id), obj)
+
+    def test_residue(self):
+        self._test_container(Residue, 0, 3, range(3), range(4, 21))
+
+    def test_chain(self):
+        self._test_container(Chain, 'W', 15, range(15), range(16, 21))
+
+    def test_empty_chain(self):
+        self._test_container(Chain, 'X', 0, [], range(21))
+
+    def test_segment(self):
+        self._test_container(Segment, 'W1', 12, range(12), range(13, 21))
+
+    def test_empty_segment(self):
+        self._test_container(Segment, 'X', 0, [], range(21))
+
+    def test_selection(self):
+        self._test_container(Selection, 'resid 1 to 3', 9, range(9), range(10, 21))
+
+    def test_empty_selection(self):
+        self._test_container(Selection, 'none', 0, [], range(21))
+
+
 class TestAtom(PyvmdTestCase):
     """
     Test `Atom` class.
@@ -21,8 +244,6 @@ class TestAtom(PyvmdTestCase):
         atom = Atom(0)
         # Test getters
         self.assertEqual(atom.index, 0)
-        self.assertEqual(atom.molecule, mol)
-        self.assertEqual(atom.frame, NOW)
         self.assertAlmostEqual(atom.x, -1.493)
         self.assertAlmostEqual(atom.y, 1.900)
         self.assertAlmostEqual(atom.z, 1.280)
@@ -44,8 +265,6 @@ class TestAtom(PyvmdTestCase):
         # Test setters
         with self.assertRaises(AttributeError):
             atom.index = 42
-        with self.assertRaises(AttributeError):
-            atom.molecule = Molecule(molid)
         with self.assertRaises(AttributeError):
             atom.residue = Residue(4)
 
@@ -111,70 +330,6 @@ class TestAtom(PyvmdTestCase):
         self.assertEqual(VMD.atomsel.atomsel('segname S').get('index'), [0])
         self.assertEqual(atom.segment, Segment('S'))
 
-    def test_comparison(self):
-        # Test atom comparison
-        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_1 = Molecule(molid_1)
-        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_2 = Molecule(molid_2)
-        VMD.molecule.set_top(molid_1)
-
-        atom1 = Atom(0)
-        atom2 = Atom(0)
-        other = Atom(1)
-        frame = Atom(0, frame=0)
-        same_mol = Atom(0, mol_1)
-        other_mol = Atom(0, mol_2)
-
-        self.assertEqual(atom1, atom1)
-        self.assertEqual(atom1, atom2)
-        self.assertEqual(atom1, same_mol)
-        self.assertNotEqual(atom1, other)
-        self.assertNotEqual(atom2, other)
-        self.assertNotEqual(atom1, frame)
-        self.assertNotEqual(atom1, other_mol)
-
-    def test_hashability(self):
-        # Test atoms are correctly understood by sets
-        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_1 = Molecule(molid_1)
-        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_2 = Molecule(molid_2)
-        VMD.molecule.set_top(molid_1)
-
-        self.assertEqual({Atom(0), Atom(0)}, {Atom(0)})
-        self.assertEqual({Atom(0, frame=0), Atom(0, frame=0)}, {Atom(0, frame=0)})
-        self.assertEqual({Atom(0), Atom(0, frame=0)}, {Atom(0), Atom(0, frame=0)})
-        self.assertEqual({Atom(0, mol_1), Atom(0, mol_1)}, {Atom(0, mol_1)})
-        self.assertEqual({Atom(0, mol_1), Atom(0, mol_2)}, {Atom(0, mol_1), Atom(0, mol_2)})
-        self.assertEqual({Atom(0), Atom(0, mol_1)}, {Atom(0)})
-
-    def test_frame_property(self):
-        # Test frame property works correctly
-        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        VMD.molecule.read(molid, 'dcd', data('water.1.dcd'), waitfor=-1)
-        mol = Molecule(molid)
-
-        # Create atom linked to the molecule frame
-        atom = Atom(0)
-        self.assertAlmostEqual(atom.x, -1.3421925)
-        # Change the molecule frame, the atom will follow
-        mol.frame = 0
-        self.assertAlmostEqual(atom.x, -1.493)
-        mol.frame = 4
-        self.assertAlmostEqual(atom.x, -1.4773947)
-
-        # Define the atom's frame
-        atom.frame = 9
-        self.assertAlmostEqual(atom.x, -1.4120502)
-        # Change the molecule frame, the atom keeps its frame
-        mol.frame = 11
-        self.assertAlmostEqual(atom.x, -1.4120502)
-
-        # Set the atom's frame back to the molecule's frame
-        atom.frame = NOW
-        self.assertAlmostEqual(atom.x, -1.3674825)
-
     def test_constructors(self):
         # Test various ways of Atom instance creation
         molid1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
@@ -231,16 +386,12 @@ class TestResidue(PyvmdTestCase):
         res = Residue(0)
         # Test getters
         self.assertEqual(res.index, 0)
-        self.assertEqual(res.molecule, mol)
-        self.assertEqual(res.frame, NOW)
         self.assertEqual(res.number, 1)
         self.assertEqual(res.name, 'TIP3')
 
         # Test setters
         with self.assertRaises(AttributeError):
             res.index = 42
-        with self.assertRaises(AttributeError):
-            res.molecule = Molecule(molid)
 
         res.number = 42
         sel = VMD.atomsel.atomsel('residue 0', molid=molid)
@@ -250,79 +401,6 @@ class TestResidue(PyvmdTestCase):
         res.name = 'WAT'
         self.assertEqual(sel.get('resname'), ['WAT', 'WAT', 'WAT'])
         self.assertEqual(res.name, 'WAT')
-
-        # Test container methods
-        self.assertEqual(len(res), 3)
-        self.assertEqual(list(res), [Atom(0), Atom(1), Atom(2)])
-        self.assertIn(Atom(0), res)
-        self.assertIn(Atom(2), res)
-        self.assertNotIn(Atom(3), res)
-        self.assertNotIn(Atom(15), res)
-
-    def test_comparison(self):
-        # Test residue comparison
-        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_1 = Molecule(molid_1)
-        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_2 = Molecule(molid_2)
-        VMD.molecule.set_top(molid_1)
-
-        res1 = Residue(0)
-        res2 = Residue(0)
-        other = Residue(1)
-        frame = Residue(0, frame=0)
-        same_mol = Residue(0, mol_1)
-        other_mol = Residue(0, mol_2)
-
-        self.assertEqual(res1, res1)
-        self.assertEqual(res1, res2)
-        self.assertEqual(res1, same_mol)
-        self.assertNotEqual(res1, other)
-        self.assertNotEqual(res2, other)
-        self.assertNotEqual(res1, frame)
-        self.assertNotEqual(res1, other_mol)
-
-    def test_hashability(self):
-        # Test atoms are correctly understood by sets
-        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_1 = Molecule(molid_1)
-        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_2 = Molecule(molid_2)
-        VMD.molecule.set_top(molid_1)
-
-        self.assertEqual({Residue(0), Residue(0)}, {Residue(0)})
-        self.assertEqual({Residue(0, frame=0), Residue(0, frame=0)}, {Residue(0, frame=0)})
-        self.assertEqual({Residue(0), Residue(0, frame=0)}, {Residue(0), Residue(0, frame=0)})
-        self.assertEqual({Residue(0, mol_1), Residue(0, mol_1)}, {Residue(0, mol_1)})
-        self.assertEqual({Residue(0, mol_1), Residue(0, mol_2)}, {Residue(0, mol_1), Residue(0, mol_2)})
-        self.assertEqual({Residue(0), Residue(0, mol_1)}, {Residue(0)})
-
-    def test_frame_property(self):
-        # Test frame property works correctly
-        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        VMD.molecule.read(molid, 'dcd', data('water.1.dcd'), waitfor=-1)
-        mol = Molecule(molid)
-        # To check frame works correctly, check x coordinate of the residue's first atom.
-
-        # Create residue linked to the molecule frame
-        res = Residue(0)
-        self.assertAlmostEqual(list(res)[0].x, -1.3421925)
-        # Change the molecule frame, the residue will follow
-        mol.frame = 0
-        self.assertAlmostEqual(list(res)[0].x, -1.493)
-        mol.frame = 4
-        self.assertAlmostEqual(list(res)[0].x, -1.4773947)
-
-        # Define the residue's frame
-        res.frame = 9
-        self.assertAlmostEqual(list(res)[0].x, -1.4120502)
-        # Change the molecule frame, the residue keeps its frame
-        mol.frame = 11
-        self.assertAlmostEqual(list(res)[0].x, -1.4120502)
-
-        # Set the residue's frame back to the molecule's frame
-        res.frame = NOW
-        self.assertAlmostEqual(list(res)[0].x, -1.3674825)
 
 
 class TestChain(PyvmdTestCase):
@@ -337,73 +415,12 @@ class TestChain(PyvmdTestCase):
         chain = Chain('W')
         # Test getters
         self.assertEqual(chain.name, 'W')
-        self.assertEqual(chain.molecule, mol)
-        self.assertEqual(chain.frame, NOW)
 
         # Test name setter - when chain is renamed, all atoms still belong to the chain
         chain.name = 'A'
         sel = VMD.atomsel.atomsel('chain A', molid=molid)
-        self.assertEqual(sel.get('chain'), ['A'] * 21)
+        self.assertEqual(sel.get('chain'), ['A'] * 15)
         self.assertEqual(chain.name, 'A')
-
-        # Test container methods
-        self.assertEqual(len(chain), 21)
-        self.assertEqual(list(chain), [Atom(i) for i in xrange(21)])
-        self.assertIn(Atom(0), chain)
-        self.assertIn(Atom(2), chain)
-        empty_chain = Chain('X')
-        self.assertNotIn(Atom(3), empty_chain)
-        self.assertNotIn(Atom(15), empty_chain)
-
-    def test_comparison(self):
-        # Test residue comparison
-        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_1 = Molecule(molid_1)
-        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_2 = Molecule(molid_2)
-        VMD.molecule.set_top(molid_1)
-
-        chain1 = Chain('W')
-        chain2 = Chain('W')
-        other = Chain('X')
-        frame = Chain('W', frame=0)
-        same_mol = Chain('W', mol_1)
-        other_mol = Chain('W', mol_2)
-
-        self.assertEqual(chain1, chain1)
-        self.assertEqual(chain1, chain2)
-        self.assertEqual(chain1, same_mol)
-        self.assertNotEqual(chain1, other)
-        self.assertNotEqual(chain2, other)
-        self.assertNotEqual(chain1, frame)
-        self.assertNotEqual(chain1, other_mol)
-
-    def test_frame_property(self):
-        # Test frame property works correctly
-        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        VMD.molecule.read(molid, 'dcd', data('water.1.dcd'), waitfor=-1)
-        mol = Molecule(molid)
-        # To check frame works correctly, check x coordinate of the chain's first atom.
-
-        # Create chain linked to the molecule frame
-        chain = Chain('W')
-        self.assertAlmostEqual(list(chain)[0].x, -1.3421925)
-        # Change the molecule frame, the chain will follow
-        mol.frame = 0
-        self.assertAlmostEqual(list(chain)[0].x, -1.493)
-        mol.frame = 4
-        self.assertAlmostEqual(list(chain)[0].x, -1.4773947)
-
-        # Define the chain's frame
-        chain.frame = 9
-        self.assertAlmostEqual(list(chain)[0].x, -1.4120502)
-        # Change the molecule frame, the chain keeps its frame
-        mol.frame = 11
-        self.assertAlmostEqual(list(chain)[0].x, -1.4120502)
-
-        # Set the chain's frame back to the molecule's frame
-        chain.frame = NOW
-        self.assertAlmostEqual(list(chain)[0].x, -1.3674825)
 
 
 class TestSegment(PyvmdTestCase):
@@ -418,73 +435,12 @@ class TestSegment(PyvmdTestCase):
         segment = Segment('W1')
         # Test getters
         self.assertEqual(segment.name, 'W1')
-        self.assertEqual(segment.molecule, mol)
-        self.assertEqual(segment.frame, NOW)
 
         # Test name setter - when segment is renamed, all atoms still belong to the segment
         segment.name = 'A'
         sel = VMD.atomsel.atomsel('segname A', molid=molid)
-        self.assertEqual(sel.get('segname'), ['A'] * 21)
+        self.assertEqual(sel.get('segname'), ['A'] * 12)
         self.assertEqual(segment.name, 'A')
-
-        # Test container methods
-        self.assertEqual(len(segment), 21)
-        self.assertEqual(list(segment), [Atom(i) for i in xrange(21)])
-        self.assertIn(Atom(0), segment)
-        self.assertIn(Atom(2), segment)
-        empty_segment = Segment('X')
-        self.assertNotIn(Atom(3), empty_segment)
-        self.assertNotIn(Atom(15), empty_segment)
-
-    def test_comparison(self):
-        # Test residue comparison
-        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_1 = Molecule(molid_1)
-        molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_2 = Molecule(molid_2)
-        VMD.molecule.set_top(molid_1)
-
-        segment1 = Segment('W1')
-        segment2 = Segment('W1')
-        other = Segment('X')
-        frame = Segment('W1', frame=0)
-        same_mol = Segment('W1', mol_1)
-        other_mol = Segment('W1', mol_2)
-
-        self.assertEqual(segment1, segment1)
-        self.assertEqual(segment1, segment2)
-        self.assertEqual(segment1, same_mol)
-        self.assertNotEqual(segment1, other)
-        self.assertNotEqual(segment2, other)
-        self.assertNotEqual(segment1, frame)
-        self.assertNotEqual(segment1, other_mol)
-
-    def test_frame_property(self):
-        # Test frame property works correctly
-        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        VMD.molecule.read(molid, 'dcd', data('water.1.dcd'), waitfor=-1)
-        mol = Molecule(molid)
-        # To check frame works correctly, check x coordinate of the segment's first atom.
-
-        # Create segment linked to the molecule frame
-        segment = Segment('W1')
-        self.assertAlmostEqual(list(segment)[0].x, -1.3421925)
-        # Change the molecule frame, the segment will follow
-        mol.frame = 0
-        self.assertAlmostEqual(list(segment)[0].x, -1.493)
-        mol.frame = 4
-        self.assertAlmostEqual(list(segment)[0].x, -1.4773947)
-
-        # Define the segment's frame
-        segment.frame = 9
-        self.assertAlmostEqual(list(segment)[0].x, -1.4120502)
-        # Change the molecule frame, the segment keeps its frame
-        mol.frame = 11
-        self.assertAlmostEqual(list(segment)[0].x, -1.4120502)
-
-        # Set the segment's frame back to the molecule's frame
-        segment.frame = NOW
-        self.assertAlmostEqual(list(segment)[0].x, -1.3674825)
 
 
 class TestSelection(PyvmdTestCase):
@@ -499,35 +455,12 @@ class TestSelection(PyvmdTestCase):
         sel = Selection('resid 1 to 3')
         # Test getters
         self.assertEqual(sel.selection, 'resid 1 to 3')
-        self.assertEqual(sel.molecule, mol)
-        self.assertEqual(sel.frame, NOW)
         # Test setters
         with self.assertRaises(AttributeError):
             sel.selection = 'none'
-        with self.assertRaises(AttributeError):
-            sel.molecule = Molecule(molid)
 
-        # Test container methods
-        self.assertEqual(len(sel), 9)
-        self.assertEqual(list(sel), [Atom(0), Atom(1), Atom(2), Atom(3), Atom(4), Atom(5), Atom(6), Atom(7), Atom(8)])
-        self.assertIn(Atom(0), sel)
-        self.assertIn(Atom(5), sel)
-        self.assertNotIn(Atom(9), sel)
-        self.assertNotIn(Atom(15), sel)
-
-        # Test empty selection
-        sel = Selection('none')
-        self.assertEqual(sel.selection, 'none')
-        self.assertEqual(sel.molecule, mol)
-        self.assertEqual(sel.frame, NOW)
-        # Test container methods
-        self.assertEqual(len(sel), 0)
-        self.assertEqual(list(sel), [])
-        self.assertNotIn(Atom(0), sel)
-        self.assertNotIn(Atom(5), sel)
-
-    def test_frame_property(self):
-        # Test frame property works correctly
+    def test_selection_updates(self):
+        # Test selection updates if frame is changed
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
         VMD.molecule.read(molid, 'dcd', data('water.1.dcd'), waitfor=-1)
         mol = Molecule(molid)
