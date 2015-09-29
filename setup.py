@@ -7,6 +7,7 @@ from pyvmd import __version__ as version
 CLASSIFIERS = [
     'Development Status :: 3 - Alpha',
     'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
     'Topic :: Scientific/Engineering :: Bio-Informatics',
@@ -27,4 +28,5 @@ if __name__ == '__main__':
         description="Python tools for Visual Molecular Dynamics",
         url="https://github.com/ziima/pyvmd",
         classifiers=CLASSIFIERS,
+        license='GPLv3',
     )
