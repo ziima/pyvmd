@@ -16,7 +16,7 @@ pylint:
 	-PYTHONPATH="/usr/lib/vmd/scripts/python" pylint pyvmd --reports=no
 
 flake8:
-	-flake8 pyvmd --max-line-length=120
+	-flake8 pyvmd
 
 pepify: pylint flake8
 
