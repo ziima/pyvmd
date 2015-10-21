@@ -141,7 +141,10 @@ class ComparisonTest(PyvmdTestCase):
     def test_segment(self):
         self._test_equality(Segment, 'W1', 'X')
 
-    # Selection object doesn't have equality defined
+    def test_selection(self):
+        # Even though the selection texts differ only literally, there is no interface that we can use to
+        # tell us whether the two selection texts corresponds to the same selection, so we consider them different.
+        self._test_equality(Selection, 'all', '(all)')
 
     def test_different_objects(self):
         VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))

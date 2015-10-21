@@ -116,6 +116,13 @@ class Selection(IterableSelectionMixin, SelectionBase):
         # _update_frame is the frame that have been used to filter coordinate based selection in last update.
         self._update_frame = self._get_active_frame()
 
+    def __eq__(self, other):
+        return type(self) == type(other) and self._selection == other.selection and \
+            self._molecule == other.molecule and self._frame == other.frame
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def _get_active_frame(self):
         # Return which frame is used to filter coordinate based selection.
         if self._frame == NOW:
