@@ -3,8 +3,8 @@ Objects for manipulation with VMD atoms.
 """
 import itertools
 
-from numpy import array
 from atomsel import atomsel as _atomsel
+from numpy import array
 from VMD import molecule as _molecule
 
 from .molecules import Molecule, MOLECULES

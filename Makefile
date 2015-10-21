@@ -16,3 +16,6 @@ pep8:
 	-pep8 pyvmd --max-line-length=119
 
 pepify: pylint pep8
+
+isort:
+	isort --recursive pyvmd

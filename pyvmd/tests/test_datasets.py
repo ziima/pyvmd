@@ -1,12 +1,12 @@
 """
 Tests for data sets.
 """
-from cStringIO import StringIO
 import os
+from cStringIO import StringIO
 from tempfile import mkstemp
 
-from mock import Mock
 import numpy
+from mock import Mock
 
 from pyvmd.collectors import Collector
 from pyvmd.datasets import DataSet

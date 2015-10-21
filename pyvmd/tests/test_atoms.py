@@ -1,11 +1,12 @@
 """
 Tests for atom objects.
 """
-from numpy import ndarray
 import VMD
+from numpy import ndarray
 
-from pyvmd.atoms import Atom, Chain, Residue, Segment, Selection, NOW
+from pyvmd.atoms import Atom, Chain, NOW, Residue, Segment, Selection
 from pyvmd.molecules import Molecule
+
 from .utils import data, PyvmdTestCase
 
 

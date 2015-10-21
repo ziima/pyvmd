@@ -1,10 +1,11 @@
 """
 Tests for molecule utilities.
 """
-from Molecule import Molecule as _Molecule
 import VMD
+from Molecule import Molecule as _Molecule
 
-from pyvmd.molecules import Molecule, MoleculeManager, FORMAT_PDB
+from pyvmd.molecules import FORMAT_PDB, Molecule, MoleculeManager
+
 from .utils import data, PyvmdTestCase
 
 

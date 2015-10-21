@@ -5,6 +5,7 @@ import VMD
 
 from pyvmd.analysis import hydrogen_bonds, HydrogenBond
 from pyvmd.atoms import Atom, Selection
+
 from .utils import data, PyvmdTestCase
 
 

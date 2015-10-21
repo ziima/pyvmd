@@ -5,8 +5,8 @@ from cStringIO import StringIO
 
 from pyvmd.analyzer import Analyzer
 from pyvmd.atoms import Selection
-from pyvmd.collectors import AngleCollector, DihedralCollector, DistanceCollector, RMSDCollector, XCoordCollector, \
-    YCoordCollector, ZCoordCollector
+from pyvmd.collectors import (AngleCollector, DihedralCollector, DistanceCollector, RMSDCollector, XCoordCollector,
+                              YCoordCollector, ZCoordCollector)
 from pyvmd.datasets import DataSet
 from pyvmd.molecules import Molecule
 

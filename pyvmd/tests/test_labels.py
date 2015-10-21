@@ -4,9 +4,10 @@ Tests for labels utilities.
 import VMD
 
 from pyvmd.atoms import Atom
-from pyvmd.labels import AngleLabel, AtomLabel, BondLabel, DihedralLabel, ANGLE, ANGLE_LABELS, ATOM, ATOM_LABELS, \
-    BOND, BOND_LABELS, DIHEDRAL, DIHEDRAL_LABELS
+from pyvmd.labels import (ANGLE, ANGLE_LABELS, AngleLabel, ATOM, ATOM_LABELS, AtomLabel, BOND, BOND_LABELS, BondLabel,
+                          DIHEDRAL, DIHEDRAL_LABELS, DihedralLabel)
 from pyvmd.molecules import Molecule, MOLECULES
+
 from .utils import data, PyvmdTestCase
 
 
