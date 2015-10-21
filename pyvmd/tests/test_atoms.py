@@ -144,7 +144,7 @@ class ComparisonTest(PyvmdTestCase):
     # Selection object doesn't have equality defined
 
     def test_different_objects(self):
-        molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
 
         self.assertNotEqual(Atom(0), Residue(0))
         self.assertNotEqual(Chain('X'), Segment('X'))
@@ -186,7 +186,6 @@ class ContainerTest(PyvmdTestCase):
     """
     def _test_container(self, obj_type, obj_id, length, atom_ids, out_ids):
         molid_1 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol_1 = Molecule(molid_1)
         molid_2 = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
         mol_2 = Molecule(molid_2)
         VMD.molecule.set_top(molid_1)
@@ -240,7 +239,6 @@ class TestAtom(PyvmdTestCase):
     def test_properties(self):
         # Test getters and setters
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol = Molecule(molid)
 
         atom = Atom(0)
         # Test getters
@@ -275,7 +273,7 @@ class TestAtom(PyvmdTestCase):
         atom.x = 23.9
         atom.y = -200.45
         atom.z = 0
-        #XXX: There are some troubles with rounding in set
+        # XXX: There are some troubles with rounding in set
         self.assertAlmostEqualSeqs(sel.get('x'), [23.9], places=6)
         self.assertAlmostEqualSeqs(sel.get('y'), [-200.45], places=5)
         self.assertAlmostEqualSeqs(sel.get('z'), [0])
@@ -286,7 +284,7 @@ class TestAtom(PyvmdTestCase):
 
         # Set complete coordinates
         atom.coords = (-90.56, 42, 17.85)
-        #XXX: There are some troubles with rounding in set
+        # XXX: There are some troubles with rounding in set
         self.assertAlmostEqualSeqs(sel.get('x'), [-90.56], places=5)
         self.assertAlmostEqualSeqs(sel.get('y'), [42])
         self.assertAlmostEqualSeqs(sel.get('z'), [17.85], places=6)
@@ -382,7 +380,6 @@ class TestResidue(PyvmdTestCase):
     def test_properties(self):
         # Test getters and setters
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol = Molecule(molid)
 
         res = Residue(0)
         # Test getters
@@ -411,7 +408,6 @@ class TestChain(PyvmdTestCase):
     def test_properties(self):
         # Test getters and setters
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol = Molecule(molid)
 
         chain = Chain('W')
         # Test getters
@@ -431,7 +427,6 @@ class TestSegment(PyvmdTestCase):
     def test_properties(self):
         # Test getters and setters
         molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol = Molecule(molid)
 
         segment = Segment('W1')
         # Test getters
@@ -450,8 +445,7 @@ class TestSelection(PyvmdTestCase):
     """
     def test_properties(self):
         # Test basic properties
-        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
-        mol = Molecule(molid)
+        VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
 
         sel = Selection('resid 1 to 3')
         # Test getters

@@ -6,7 +6,7 @@ import sys
 import unittest
 
 if not hasattr(unittest, 'skip'):
-    #XXX: Use unittest2 to use python 2.7 unittest features.
+    # XXX: Use unittest2 to use python 2.7 unittest features.
     import unittest2 as unittest
 
 

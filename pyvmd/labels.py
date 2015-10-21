@@ -6,7 +6,7 @@ from VMD import label as _label
 from .atoms import Atom
 from .molecules import Molecule
 
-__all__ = ['AngleLabel', 'AtomLabel', 'BondLabel', 'DihedralLabel', 'ANGLE', 'ANGLE_LABELS', 'ATOM', 'ATOM_LABELS', \
+__all__ = ['AngleLabel', 'AtomLabel', 'BondLabel', 'DihedralLabel', 'ANGLE', 'ANGLE_LABELS', 'ATOM', 'ATOM_LABELS',
            'BOND', 'BOND_LABELS', 'DIHEDRAL', 'DIHEDRAL_LABELS']
 
 

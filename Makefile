@@ -1,5 +1,8 @@
 VMD = vmd
 
+# All targets are phony
+.PHONY: test coverage pylint flake8 pepify isort
+
 test:
 	${VMD} -python -dispdev none -e pyvmd/tests/__init__.py -args discover
 
@@ -10,12 +13,12 @@ coverage:
 	python-coverage html -d htmlcov
 
 pylint:
-	-PYTHONPATH="/usr/lib/vmd/scripts/python" pylint pyvmd
+	-PYTHONPATH="/usr/lib/vmd/scripts/python" pylint pyvmd --reports=no
 
-pep8:
-	-pep8 pyvmd --max-line-length=119
+flake8:
+	-flake8 pyvmd --max-line-length=120
 
-pepify: pylint pep8
+pepify: pylint flake8
 
 isort:
 	isort --recursive pyvmd

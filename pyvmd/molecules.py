@@ -56,7 +56,7 @@ class Frames(object):
         return _molecule.numframes(self.molecule.molid)
 
     def __delitem__(self, key):
-        #XXX: For some reason, 'skip' in the 'delframe' function means which frames are left when deleting
+        # XXX: For some reason, 'skip' in the 'delframe' function means which frames are left when deleting
         # That is not consistent with python slicing, so we have to avoid that argument
         if isinstance(key, slice):
             start, stop, step = key.indices(len(self))

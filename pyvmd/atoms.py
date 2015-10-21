@@ -9,7 +9,7 @@ from VMD import molecule as _molecule
 
 from .molecules import Molecule, MOLECULES
 
-__all__ = ['Atom', 'Chain', 'Residue', 'Segment' 'Selection', 'NOW']
+__all__ = ['Atom', 'Chain', 'Residue', 'Segment', 'Selection', 'NOW']
 
 
 # Constant which always references active frame
@@ -275,7 +275,7 @@ class Atom(StaticSelection):
     z = _object_property('z', doc="Coordinate in 'z' dimension.")
 
     def _get_coords(self):
-        #XXX: This is unintuitive, but very fast. The atom's center is the location of the atom.
+        # XXX: This is unintuitive, but very fast. The atom's center is the location of the atom.
         # Apparently getting the coordinates all at once has lower overhead than underlying conputation of the center.
         return array(self.atomsel.center())
 
@@ -339,7 +339,7 @@ class Residue(IterableSelectionMixin, StaticSelection):
     # Large amounts of these objects can be created, slots has some performance benefits.
     __slots__ = ()
 
-    #TODO: Check if index makes sense in __init__
+    # TODO: Check if index makes sense in __init__
 
     @property
     def atomsel(self):

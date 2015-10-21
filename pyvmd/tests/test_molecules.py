@@ -77,8 +77,8 @@ class TestMolecule(PyvmdTestCase):
         self.assertEqual(VMD.molecule.get_filenames(mol.molid), [data('water.psf'), data('water.pdb')])
         self.assertEqual(VMD.molecule.get_filetypes(mol.molid), ['psf', 'pdb'])
         mol.load(data('water.1.dcd'))
-        self.assertEqual(VMD.molecule.get_filenames(mol.molid), [data('water.psf'), data('water.pdb'),
-                                                                   data('water.1.dcd')])
+        self.assertEqual(VMD.molecule.get_filenames(mol.molid),
+                         [data('water.psf'), data('water.pdb'), data('water.1.dcd')])
         self.assertEqual(VMD.molecule.get_filetypes(mol.molid), ['psf', 'pdb', 'dcd'])
 
         self.assertRaises(ValueError, mol.load, 'no_extension')
