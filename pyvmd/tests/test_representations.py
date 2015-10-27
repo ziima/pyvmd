@@ -5,7 +5,8 @@ from VMD import molecule as _molecule, molrep as _molrep
 
 from pyvmd.atoms import Selection
 from pyvmd.molecules import Molecule
-from pyvmd.representations import DRAW_LINES, DRAW_POINTS, Representation, Style
+from pyvmd.representations import (Color, COLOR_COLOR, COLOR_NAME, COLOR_TYPE, DRAW_LINES, DRAW_POINTS, Representation,
+                                   Style)
 
 from .utils import data, PyvmdTestCase
 
@@ -112,6 +113,12 @@ class TestRepresentation(PyvmdTestCase):
         with self.assertRaises(AttributeError):
             rep.style = Style(Representation('rep0'))
 
+    def test_color(self):
+        rep = Representation('rep0')
+        self.assertEqual(rep.color, Color(Representation('rep0')))
+        with self.assertRaises(AttributeError):
+            rep.style = Color(Representation('rep0'))
+
 
 class TestStyle(PyvmdTestCase):
     """
@@ -158,3 +165,54 @@ class TestStyle(PyvmdTestCase):
         style = Style(self.rep)
         with self.assertRaises(ValueError):
             style.set_parameters(unknown=78)
+
+
+class TestColor(PyvmdTestCase):
+    """
+    Test `Color` class.
+    """
+    def setUp(self):
+        self.molid = _molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        self.rep = Representation('rep0')
+        self.rep2 = Representation.create()
+
+    def test_comparison(self):
+        color_1 = Color(self.rep)
+        color_2 = Color(self.rep)
+        color_rep2 = Color(self.rep2)
+
+        self.assertEqual(color_1, color_1)
+        self.assertEqual(color_1, color_2)
+        self.assertNotEqual(color_1, color_rep2)
+
+    def test_method(self):
+        color = Color(self.rep)
+        self.assertEqual(color.method, COLOR_NAME)
+
+        color.method = COLOR_TYPE
+        self.assertEqual(color.method, COLOR_TYPE)
+        self.assertEqual(_molrep.get_color(self.molid, 0), 'Type')
+
+    def test_get_parameters(self):
+        color = Color(self.rep)
+        self.assertEqual(color.get_parameters(), {})
+
+        color.method = COLOR_COLOR
+        self.assertEqual(color.get_parameters(), {'color': 1})
+
+    def test_set_parameters(self):
+        color = Color(self.rep)
+        color.method = COLOR_COLOR
+        color.set_parameters(color=4)
+        self.assertEqual(_molrep.get_color(self.molid, 0), 'ColorID 4')
+        self.assertEqual(color.get_parameters(), {'color': 4})
+
+    def test_set_parameters_no_kwargs(self):
+        color = Color(self.rep)
+        with self.assertRaises(ValueError):
+            color.set_parameters()
+
+    def test_set_parameters_invalid_kwargs(self):
+        color = Color(self.rep)
+        with self.assertRaises(ValueError):
+            color.set_parameters(unknown=78)

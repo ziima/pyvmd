@@ -8,11 +8,16 @@ from VMD import molrep as _molrep
 from pyvmd.atoms import Selection
 from pyvmd.molecules import Molecule, MOLECULES
 
-__all__ = ['DRAW_BEADS', 'DRAW_BONDS', 'DRAW_CARTOON', 'DRAW_CPK', 'DRAW_DOTTED', 'DRAW_DYNAMIC_BONDS',
-           'DRAW_FIELD_LINES', 'DRAW_HBONDS', 'DRAW_ISOSURFACE', 'DRAW_LICORICE', 'DRAW_LINES', 'DRAW_MSMS',
-           'DRAW_NEW_CARTOON', 'DRAW_NEW_RIBBONS', 'DRAW_ORBITAL', 'DRAW_PAPER_CHAIN', 'DRAW_POINTS', 'DRAW_POLYHEDRA',
-           'DRAW_QUICKSURF', 'DRAW_RIBBONS', 'DRAW_SOLVENT', 'DRAW_SURF', 'DRAW_TRACE', 'DRAW_TUBE', 'DRAW_TWISTER',
-           'DRAW_VDW', 'DRAW_VOLUME_SLICE', 'DRAWING_METHODS', 'Representation']
+__all__ = ['COLOR_BACKBONE', 'COLOR_BETA', 'COLOR_CHAIN', 'COLOR_CHARGE', 'COLOR_COLOR', 'COLOR_CONFORMATION',
+           'COLOR_ELEMENT', 'COLOR_FRAGMENT', 'COLOR_INDEX', 'COLOR_MASS', 'COLOR_MOLECULE', 'COLOR_NAME',
+           'COLOR_OCCUPANCY', 'COLOR_PHYSICAL_TIME', 'COLOR_POS', 'COLOR_POS_X', 'COLOR_POS_Y', 'COLOR_POS_Z',
+           'COLOR_RESID', 'COLOR_RESNAME', 'COLOR_RESTYPE', 'COLOR_SEGNAME', 'COLOR_STRUCTURE', 'COLOR_THROB',
+           'COLOR_TIMESTEP', 'COLOR_TYPE', 'COLOR_USER', 'COLOR_USER_2', 'COLOR_USER_3', 'COLOR_USER_4',
+           'COLOR_VELOCITY', 'COLOR_VOLUME', 'COLORING_METHODS', 'DRAW_BEADS', 'DRAW_BONDS', 'DRAW_CARTOON', 'DRAW_CPK',
+           'DRAW_DOTTED', 'DRAW_DYNAMIC_BONDS', 'DRAW_FIELD_LINES', 'DRAW_HBONDS', 'DRAW_ISOSURFACE', 'DRAW_LICORICE',
+           'DRAW_LINES', 'DRAW_MSMS', 'DRAW_NEW_CARTOON', 'DRAW_NEW_RIBBONS', 'DRAW_ORBITAL', 'DRAW_PAPER_CHAIN',
+           'DRAW_POINTS', 'DRAW_POLYHEDRA', 'DRAW_QUICKSURF', 'DRAW_RIBBONS', 'DRAW_SOLVENT', 'DRAW_SURF', 'DRAW_TRACE',
+           'DRAW_TUBE', 'DRAW_TWISTER', 'DRAW_VDW', 'DRAW_VOLUME_SLICE', 'DRAWING_METHODS', 'Representation']
 
 
 def _modrep(representation, **kwargs):
@@ -178,6 +183,131 @@ class Style(object):
 
 
 ################################################################################
+# Color methods
+#
+# name: VMD color keyword
+# parameters: List of paramater names. Customized because there is no definition of those in VMD.
+# defaults: Dictionary with default values.
+ColoringMethod = namedtuple('ColoringMethod', ('name', 'parameters', 'defaults'))
+
+# Color methods as defined in AtomColor.C
+COLOR_NAME = ColoringMethod("Name", (), {})
+COLOR_TYPE = ColoringMethod("Type", (), {})
+COLOR_ELEMENT = ColoringMethod("Element", (), {})
+COLOR_RESNAME = ColoringMethod("ResName", (), {})
+COLOR_RESTYPE = ColoringMethod("ResType", (), {})
+COLOR_RESID = ColoringMethod("ResID", (), {})
+COLOR_CHAIN = ColoringMethod("Chain", (), {})
+COLOR_SEGNAME = ColoringMethod("SegName", (), {})
+COLOR_CONFORMATION = ColoringMethod("Conformation", (), {})
+COLOR_MOLECULE = ColoringMethod("Molecule", (), {})
+COLOR_STRUCTURE = ColoringMethod("Structure", (), {})
+COLOR_COLOR = ColoringMethod("ColorID", ('color', ), {'color': 1})
+COLOR_BETA = ColoringMethod("Beta", (), {})
+COLOR_OCCUPANCY = ColoringMethod("Occupancy", (), {})
+COLOR_MASS = ColoringMethod("Mass", (), {})
+COLOR_CHARGE = ColoringMethod("Charge", (), {})
+COLOR_POS = ColoringMethod("Pos", (), {})
+COLOR_POS_X = ColoringMethod("PosX", (), {})
+COLOR_POS_Y = ColoringMethod("PosY", (), {})
+COLOR_POS_Z = ColoringMethod("PosZ", (), {})
+COLOR_USER = ColoringMethod("User", (), {})
+COLOR_USER_2 = ColoringMethod("User2", (), {})
+COLOR_USER_3 = ColoringMethod("User3", (), {})
+COLOR_USER_4 = ColoringMethod("User4", (), {})
+COLOR_FRAGMENT = ColoringMethod("Fragment", (), {})
+COLOR_INDEX = ColoringMethod("Index", (), {})
+COLOR_BACKBONE = ColoringMethod("Backbone", (), {})
+COLOR_THROB = ColoringMethod("Throb", (), {})
+COLOR_PHYSICAL_TIME = ColoringMethod("PhysicalTime", (), {})
+COLOR_TIMESTEP = ColoringMethod("Timestep", (), {})
+COLOR_VELOCITY = ColoringMethod("Velocity", (), {})
+COLOR_VOLUME = ColoringMethod("Volume", ('volume_id', ), {'volume_id': 0})
+
+COLORING_METHODS = (COLOR_NAME, COLOR_TYPE, COLOR_ELEMENT, COLOR_RESNAME, COLOR_RESTYPE, COLOR_RESID, COLOR_CHAIN,
+                    COLOR_SEGNAME, COLOR_CONFORMATION, COLOR_MOLECULE, COLOR_STRUCTURE, COLOR_COLOR, COLOR_BETA,
+                    COLOR_OCCUPANCY, COLOR_MASS, COLOR_CHARGE, COLOR_POS, COLOR_POS_X, COLOR_POS_Y, COLOR_POS_Z,
+                    COLOR_USER, COLOR_USER_2, COLOR_USER_3, COLOR_USER_4, COLOR_FRAGMENT, COLOR_INDEX, COLOR_BACKBONE,
+                    COLOR_THROB, COLOR_PHYSICAL_TIME, COLOR_TIMESTEP, COLOR_VELOCITY, COLOR_VOLUME)
+COLORING_METHODS_MAP = {m.name: m for m in COLORING_METHODS}
+
+
+def _parse_raw_color(raw_color):
+    """
+    Parses raw color string and returns coloring method and options.
+    """
+    assert raw_color
+    chunks = raw_color.split()
+    method_name = chunks.pop(0)
+    if method_name not in COLORING_METHODS_MAP:
+        raise ValueError('Unknown color: %s' % raw_color)
+    method = COLORING_METHODS_MAP[method_name]
+    params = {p: int(v) for p, v in zip(method.parameters, chunks)}
+    return method, params
+
+
+class Color(object):
+    """
+    Represents coloring method and its parameters of a particular representaiton.
+
+    This class is a proxy for molecule represenation color in VMD.
+    """
+    def __init__(self, representation):
+        assert isinstance(representation, Representation)
+        self.representation = representation
+
+    def __repr__(self):
+        return "<%s: '%r'>" % (type(self).__name__, self.representation)
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.representation == other.representation
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    ############################################################################
+    # Color properties
+    def _set_color(self, method, parameters):
+        # Utility method to format and set the color with all parameters.
+        # Construct color string
+        if method.parameters:
+            data = (str(parameters[p]) for p in method.parameters)
+            color_str = '%s %s' % (method.name, ' '.join(data))
+        else:
+            color_str = method.name
+        # Set the style in VMD
+        _modrep(self.representation, color=color_str)
+
+    def _get_method(self):
+        raw_color = _molrep.get_color(self.representation.molecule.molid, self.representation.repindex)
+        return _parse_raw_color(raw_color)[0]
+
+    def _set_method(self, method):
+        # Only assert. There is no function to get the list of available coloring methods, so just send it to VMD.
+        assert method in COLORING_METHODS
+        self._set_color(method, method.defaults)
+
+    method = property(_get_method, _set_method, doc="Coloring method")
+
+    def get_parameters(self):
+        """Returns coloring parameters"""
+        raw_color = _molrep.get_color(self.representation.molecule.molid, self.representation.repindex)
+        return _parse_raw_color(raw_color)[1]
+
+    def set_parameters(self, **kwargs):
+        """Sets coloring parameters"""
+        if not kwargs:
+            raise ValueError('At least one parameter is required.')
+        method = self.method
+        if set(kwargs) - set(method.parameters):
+            raise ValueError('Unknown parameters: %s' % (set(kwargs) - set(method.parameters)))
+        # Get current parameters and update with modifications
+        params = self.get_parameters()
+        params.update(kwargs)
+        self._set_color(method, params)
+
+
+################################################################################
 # Representation
 #
 class Representation(object):
@@ -301,3 +431,8 @@ class Representation(object):
     def style(self):
         """Graphical style"""
         return Style(self)
+
+    @property
+    def color(self):
+        """Color"""
+        return Color(self)
