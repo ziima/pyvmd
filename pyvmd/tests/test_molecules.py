@@ -5,6 +5,7 @@ import VMD
 from Molecule import Molecule as _Molecule
 
 from pyvmd.molecules import FORMAT_PDB, Molecule, MoleculeManager
+from pyvmd.representations import Representation
 
 from .utils import data, PyvmdTestCase
 
@@ -257,3 +258,61 @@ class TestMoleculeManager(PyvmdTestCase):
 
         # Manager correctly returns the new molecule
         self.assertEqual(man['Unique'], mol2)
+
+
+class TestRepresentationManager(PyvmdTestCase):
+    """
+    Test `RepresentationManager` class.
+    """
+    def setUp(self):
+        molid = VMD.molecule.load('psf', data('water.psf'), 'pdb', data('water.pdb'))
+        self.mol = Molecule(molid)
+
+    def test_property(self):
+        # Test Molecule.representations property
+        man = self.mol.representations
+
+        self.assertEqual(man.molecule, self.mol)
+
+        with self.assertRaises(AttributeError):
+            self.mol.representations = Representation('rep0')
+
+    def test_len(self):
+        self.assertEqual(len(self.mol.representations), 1)
+        VMD.molrep.addrep(self.mol.molid)
+        self.assertEqual(len(self.mol.representations), 2)
+
+    def test_getitem(self):
+        VMD.molrep.addrep(self.mol.molid)
+
+        # Test positive indexes
+        self.assertEqual(self.mol.representations[0], Representation('rep0'))
+        self.assertEqual(self.mol.representations[1], Representation('rep1'))
+        with self.assertRaises(IndexError):
+            self.mol.representations[2]
+        # Check negative indexes
+        self.assertEqual(self.mol.representations[-2], Representation('rep0'))
+        self.assertEqual(self.mol.representations[-1], Representation('rep1'))
+        with self.assertRaises(IndexError):
+            self.mol.representations[-3]
+
+        # Test representation names
+        self.assertEqual(self.mol.representations['rep0'], Representation('rep0'))
+        self.assertEqual(self.mol.representations['rep1'], Representation('rep1'))
+        with self.assertRaises(KeyError):
+            self.mol.representations['junk']
+
+        # Test slices
+        self.assertEqual(self.mol.representations[::-1], [Representation('rep1'), Representation('rep0')])
+        self.assertEqual(self.mol.representations[:10], [Representation('rep0'), Representation('rep1')])
+
+        # Test type error
+        with self.assertRaises(TypeError):
+            self.mol.representations[None]
+
+    def test_iter(self):
+        self.assertEqual(list(self.mol.representations), [Representation('rep0')])
+
+        VMD.molrep.addrep(self.mol.molid)
+
+        self.assertEqual(list(self.mol.representations), [Representation('rep0'), Representation('rep1')])

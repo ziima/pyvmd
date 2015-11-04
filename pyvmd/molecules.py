@@ -5,7 +5,7 @@ import logging
 import os.path
 
 from Molecule import Molecule as _Molecule
-from VMD import molecule as _molecule
+from VMD import molecule as _molecule, molrep as _molrep
 
 __all__ = ['Frames', 'Molecule', 'FORMAT_DCD', 'FORMAT_PDB', 'FORMAT_PSF', 'FORMATS', 'MOLECULES']
 
@@ -87,6 +87,51 @@ class Frames(object):
         else:
             assert isinstance(frame, int) and frame >= 0
         _molecule.dupframe(self.molecule.molid, frame)
+
+
+class RepresentationManager(object):
+    """
+    Manager of molecule representations.
+    """
+    def __init__(self, molecule):
+        """
+        @param molecule: Respective molecule
+        @type molecule: Molecule
+        """
+        # Use molecule instance instead of molid for possible callbacks
+        assert isinstance(molecule, Molecule)
+        self.molecule = molecule
+
+    def __len__(self):
+        return _molrep.num(self.molecule.molid)
+
+    def __iter__(self):
+        from pyvmd.representations import Representation
+        for i in xrange(len(self)):
+            yield Representation(_molrep.get_repname(self.molecule.molid, i), self.molecule)
+
+    def __getitem__(self, key):
+        from pyvmd.representations import Representation
+        length = len(self)
+        if isinstance(key, slice):
+            start, stop, step = key.indices(length)
+            # Use recursion for individual representations
+            return [self[i] for i in xrange(*key.indices(length))]
+        elif isinstance(key, int):
+            if key < 0:
+                index = length + key
+            else:
+                index = key
+            if not 0 <= index < length:
+                raise IndexError("Index out of range")
+            return Representation(_molrep.get_repname(self.molecule.molid, index), self.molecule)
+        elif isinstance(key, basestring):
+            try:
+                return Representation(key, self.molecule)
+            except ValueError:
+                raise KeyError(key)
+        else:
+            raise TypeError("%s indices must be integers, not %s" % (type(self), type(key)))
 
 
 class Molecule(object):
@@ -182,6 +227,13 @@ class Molecule(object):
         _molecule.rename(self.molid, name)
 
     name = property(_get_name, _set_name, doc="Molecule's name")
+
+    @property
+    def representations(self):
+        """
+        Returns molecule representations manager.
+        """
+        return RepresentationManager(self)
 
 
 class MoleculeManager(object):
