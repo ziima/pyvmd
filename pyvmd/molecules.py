@@ -7,7 +7,7 @@ import os.path
 from Molecule import Molecule as _Molecule
 from VMD import molecule as _molecule, molrep as _molrep
 
-__all__ = ['Frames', 'Molecule', 'FORMAT_DCD', 'FORMAT_PDB', 'FORMAT_PSF', 'FORMATS', 'MOLECULES']
+__all__ = ['Frames', 'Molecule', 'FORMAT_DCD', 'FORMAT_PARM7', 'FORMAT_PDB', 'FORMAT_PSF', 'FORMATS', 'MOLECULES']
 
 
 LOGGER = logging.getLogger(__name__)
@@ -15,6 +15,7 @@ LOGGER = logging.getLogger(__name__)
 
 # File formats
 FORMAT_DCD = 'dcd'
+FORMAT_PARM7 = 'parm7'
 FORMAT_PDB = 'pdb'
 FORMAT_PSF = 'psf'
 # Dictionary to translate file extensions to file formats
@@ -22,6 +23,7 @@ FORMATS = {
     'dcd': FORMAT_DCD,
     'pdb': FORMAT_PDB,
     'psf': FORMAT_PSF,
+    'prmtop': FORMAT_PARM7,
 }
 
 
