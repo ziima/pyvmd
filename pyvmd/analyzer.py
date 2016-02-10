@@ -50,7 +50,7 @@ class Analyzer(object):
     """
     Iteratively loads the trajectory files and performs analysis.
     """
-    def __init__(self, molecule, traj_files, step=1, chunk=10):
+    def __init__(self, molecule, traj_files, step=1, chunk=100):
         """
         @param molecule: Molecule used for loading the trajectory.
         @param traj_files: List of trajectory files
