@@ -2,6 +2,7 @@
 Tests for trajectory analysis utilities.
 """
 import VMD
+from mock import sentinel
 
 from pyvmd.analyzer import Analyzer
 from pyvmd.molecules import Molecule
@@ -19,6 +20,22 @@ class TestAnalyzer(PyvmdTestCase):
         # Storage for callback data
         self.coords = []
         self.frames = []
+
+    def test_analyze_callback_args(self):
+        # Test callback is called with extra arguments
+        steps = []
+
+        def callback(step, *args, **kwargs):
+            self.assertEqual(step.molecule, self.mol)
+            self.assertEqual(args, (sentinel.arg1, sentinel.arg2))
+            self.assertEqual(kwargs, {'key': sentinel.value, 'another': sentinel.junk})
+            steps.append(step.frame)
+
+        analyzer = Analyzer(self.mol, [data('water.1.dcd')])
+        analyzer.add_callback(callback, sentinel.arg1, sentinel.arg2, key=sentinel.value, another=sentinel.junk)
+        analyzer.analyze()
+
+        self.assertEqual(steps, range(12))
 
     def _get_status(self, status):
         # Callback to collect status data

@@ -9,6 +9,7 @@ Pyvmd aims to provide high-level pythonic interface to VMD.
  * VMD with python support
  * numpy
  * setuptools - for installation only
+ * mock - for tests only
 
 ### Installation ###
 Pyvmd has standard `setup.py` based on setuptools. Install using `python setup.py install`.

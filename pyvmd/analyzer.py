@@ -2,6 +2,7 @@
 Analyzer - performs analysis throughout trajectory.
 """
 import logging
+from collections import namedtuple
 
 from .molecules import Molecule
 
@@ -46,6 +47,10 @@ class Step(object):
         self.molecule.frame = self._chunk_frame
 
 
+# Internal structure which maintains callback information in analyzer
+Callback = namedtuple('Callback', ('function', 'args', 'kwargs'))
+
+
 class Analyzer(object):
     """
     Iteratively loads the trajectory files and performs analysis.
@@ -66,17 +71,21 @@ class Analyzer(object):
         self.chunk = chunk
         self._callbacks = []
 
-    def add_callback(self, callback):
+    def add_callback(self, callback, *args, **kwargs):
         """
         Add callback to be called on every frame.
+
+        @param callback: A function to be called on every step. It must expect `Step` object as first argument.
+        @param *args: Additional positional arguments a function is called with.
+        @param **kwargs: Additional keyword arguments a function is called with.
         """
-        self._callbacks.append(callback)
+        self._callbacks.append(Callback(callback, args, kwargs))
 
     def add_dataset(self, dataset):
         """
         Registers dataset for analysis.
         """
-        self._callbacks.append(dataset.collect)
+        self._callbacks.append(Callback(dataset.collect, (), {}))
 
     def analyze(self):
         """
@@ -104,7 +113,7 @@ class Analyzer(object):
                     step.next_frame()
                     LOGGER.info('Analyzing frame %d', step.frame)
                     for callback in self._callbacks:
-                        callback(step)
+                        callback.function(step, *callback.args, **callback.kwargs)
 
                 # Prepare for next iteration - delete all frames
                 del self.molecule.frames[:]

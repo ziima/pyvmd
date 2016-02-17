@@ -26,6 +26,16 @@ analyzer.add_callback(my_callback)
 analyzer.analyze()
 ```
 
+Callbacks can receive any additional arguments that are passed upon their registration.
+
+```python
+def my_callback(step, extra_arg, extra_keyword):
+    print step.frame, extra_arg, extra_keyword
+
+analyzer.add_callback(my_callback, extra_arg, extra_keyword=extra_value)
+```
+
+
 ## Datasets and collectors ##
 Some analyses like RMSD or atom distances are done on regular basis.
 For such analyses pyvmd provides tools which extract the data.
