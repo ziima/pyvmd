@@ -48,14 +48,14 @@ class PyvmdTestCase(unittest.TestCase):
             len1 = len(seq1)
         except (TypeError, NotImplementedError):
             differing = 'First %s has no length.    Non-sequence?' % (
-                    seq_type_name)
+                        seq_type_name)
 
         if differing is None:
             try:
                 len2 = len(seq2)
             except (TypeError, NotImplementedError):
                 differing = 'Second %s has no length.    Non-sequence?' % (
-                        seq_type_name)
+                            seq_type_name)
 
         if differing is None:
             if seq1 == seq2:
@@ -75,21 +75,21 @@ class PyvmdTestCase(unittest.TestCase):
                     item1 = seq1[i]
                 except (TypeError, IndexError, NotImplementedError):
                     differing += ('\nUnable to index element %d of first %s\n' %
-                                 (i, seq_type_name))
+                                  (i, seq_type_name))
                     break
 
                 try:
                     item2 = seq2[i]
                 except (TypeError, IndexError, NotImplementedError):
                     differing += ('\nUnable to index element %d of second %s\n' %
-                                 (i, seq_type_name))
+                                  (i, seq_type_name))
                     break
 
                 try:
                     self.assertAlmostEqual(item1, item2, places=places, delta=delta)
                 except self.failureException, error:
                     differing += ('\nFirst differing element %d:\n%s\n' %
-                                 (i, error))
+                                  (i, error))
                     break
             else:
                 if len1 == len2:
@@ -98,7 +98,7 @@ class PyvmdTestCase(unittest.TestCase):
 
             if len1 > len2:
                 differing += ('\nFirst %s contains %d additional '
-                             'elements.\n' % (seq_type_name, len1 - len2))
+                              'elements.\n' % (seq_type_name, len1 - len2))
                 try:
                     differing += ('First extra element %d:\n%s\n' %
                                   (len2, seq1[len2]))
@@ -107,7 +107,7 @@ class PyvmdTestCase(unittest.TestCase):
                                   'of first %s\n' % (len2, seq_type_name))
             elif len1 < len2:
                 differing += ('\nSecond %s contains %d additional '
-                             'elements.\n' % (seq_type_name, len2 - len1))
+                              'elements.\n' % (seq_type_name, len2 - len1))
                 try:
                     differing += ('First extra element %d:\n%s\n' %
                                   (len1, seq2[len1]))
