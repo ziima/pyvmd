@@ -1,7 +1,7 @@
 VMD = vmd
 
 # All targets are phony
-.PHONY: test coverage pylint flake8 pepify isort
+.PHONY: test coverage pylint flake8 pepify isort check-isort
 
 test:
 	${VMD} -python -dispdev none -e pyvmd/tests/__init__.py -args discover
@@ -22,3 +22,6 @@ pepify: pylint flake8
 
 isort:
 	isort --recursive pyvmd
+
+check-isort:
+	isort --check-only --diff --recursive pyvmd
