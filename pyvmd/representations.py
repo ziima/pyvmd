@@ -321,7 +321,7 @@ class Representation(object):
         Creates a molecule representation.
 
         @param name: Representation identifier.
-        @type name: str
+        @type name: String
         @param molecule: Molecule to select from. Top if not provided.
         @type molecule: Molecule or None
         """
@@ -331,7 +331,6 @@ class Representation(object):
             assert isinstance(molecule, Molecule)
         self._molecule = molecule
 
-        assert isinstance(name, str)
         self._name = name
         # If the representation does not exists, complain immediately
         self.repindex
@@ -404,7 +403,11 @@ class Representation(object):
         return _molrep.get_visible(self._molecule.molid, self.repindex)
 
     def _set_visible(self, value):
-        assert isinstance(value, bool)
+        """
+        Sets visibility
+
+        @type value: Boolean
+        """
         _molrep.set_visible(self._molecule.molid, self.repindex, value)
 
     visible = property(_get_visible, _set_visible, doc="Visibility")
@@ -413,7 +416,11 @@ class Representation(object):
         return _molrep.get_autoupdate(self._molecule.molid, self.repindex)
 
     def _set_update_selection(self, value):
-        assert isinstance(value, bool)
+        """
+        Sets selection update
+
+        @type value: Boolean
+        """
         _molrep.set_autoupdate(self._molecule.molid, self.repindex, value)
 
     update_selection = property(_get_update_selection, _set_update_selection, doc="Update selection every frame")
@@ -422,7 +429,11 @@ class Representation(object):
         return _molrep.get_colorupdate(self._molecule.molid, self.repindex)
 
     def _set_update_color(self, value):
-        assert isinstance(value, bool)
+        """
+        Sets color update
+
+        @type value: Boolean
+        """
         _molrep.set_colorupdate(self._molecule.molid, self.repindex, value)
 
     update_color = property(_get_update_color, _set_update_color, doc="Update color every frame")

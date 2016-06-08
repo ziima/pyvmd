@@ -75,8 +75,8 @@ class BaseCoordCollector(Collector):
         Creates coordinate collector.
 
         @param selection: Selection text for collector.
+        @type selection: String
         """
-        assert isinstance(selection, basestring)
         super(BaseCoordCollector, self).__init__(name)
         self.selection = selection
 
@@ -114,10 +114,10 @@ class DistanceCollector(Collector):
         Creates distance collector.
 
         @param selection1: Selection text for collector.
+        @type selection1: String
         @param selection2: Selection text for collector.
+        @type selection2: String
         """
-        assert isinstance(selection1, basestring)
-        assert isinstance(selection2, basestring)
         super(DistanceCollector, self).__init__(name)
         self.selection1 = selection1
         self.selection2 = selection2
@@ -137,12 +137,12 @@ class AngleCollector(Collector):
         Creates distance collector.
 
         @param selection1: Selection text for collector.
+        @type selection1: String
         @param selection2: Selection text for collector.
+        @type selection2: String
         @param selection3: Selection text for collector.
+        @type selection3: String
         """
-        assert isinstance(selection1, basestring)
-        assert isinstance(selection2, basestring)
-        assert isinstance(selection3, basestring)
         super(AngleCollector, self).__init__(name)
         self.selection1 = selection1
         self.selection2 = selection2
@@ -164,13 +164,14 @@ class DihedralCollector(Collector):
         Creates distance collector.
 
         @param selection1: Selection text for collector.
+        @type selection1: String
         @param selection2: Selection text for collector.
+        @type selection2: String
         @param selection3: Selection text for collector.
+        @type selection3: String
+        @param selection4: Selection text for collector.
+        @type selection4: String
         """
-        assert isinstance(selection1, basestring)
-        assert isinstance(selection2, basestring)
-        assert isinstance(selection3, basestring)
-        assert isinstance(selection4, basestring)
         super(DihedralCollector, self).__init__(name)
         self.selection1 = selection1
         self.selection2 = selection2
@@ -194,10 +195,10 @@ class RMSDCollector(Collector):
         Creates RMSD collector.
 
         @param selection: Selection text for RMSD
+        @type selection: String
         @param reference: Reference for RMSD
         @type reference: Selection
         """
-        assert isinstance(selection, basestring)
         assert isinstance(reference, Selection)
         super(RMSDCollector, self).__init__(name)
         self.selection = selection

@@ -49,13 +49,15 @@ def hydrogen_bonds(donors, acceptors=None, distance=3.0, angle=135):
     @param acceptors: Hydrogen acceptors selection
     @type donors: Selection or None
     @param distance: Maximal distance between donor and acceptor
+    @type distance: Non-negative number
     @param angle: Minimal angle in degrees between donor, hydrogen and acceptor
+    @type angle: Number between 0 and 180
     @rtype: Generator of HydrogenBond objects
     """
     assert isinstance(donors, Selection)
     assert acceptors is None or isinstance(acceptors, Selection)
-    assert isinstance(distance, (int, float, long)) and distance >= 0
-    assert isinstance(angle, (int, float, long)) and 0 <= angle <= 180
+    assert distance >= 0
+    assert 0 <= angle <= 180
 
     # Remove hydrogen atoms from selection. This can be done safely, hydrogens are never donors.
     donor_heavy = Selection('(%s) and noh' % donors.selection, donors.molecule, donors.frame)

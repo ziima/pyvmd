@@ -60,11 +60,13 @@ class Analyzer(object):
         @param molecule: Molecule used for loading the trajectory.
         @param traj_files: List of trajectory files
         @param step: Load every 'step'th frame from trajectory.
+        @type step: Positive integer
         @param chunk: Number of frames to load at once
+        @type chunk: Positive integer
         """
         assert isinstance(molecule, Molecule)
-        assert isinstance(step, (int, long)) and step > 0, "step must be possitive integer"
-        assert isinstance(chunk, (int, long)) and chunk > 0, "chunk must be possitive integer"
+        assert step > 0
+        assert chunk > 0
         self.molecule = molecule
         self.traj_files = traj_files
         self.step = step

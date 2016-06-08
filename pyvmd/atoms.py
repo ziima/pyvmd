@@ -36,7 +36,7 @@ class SelectionBase(object):
             molecule = MOLECULES.top
         else:
             assert isinstance(molecule, Molecule)
-        assert frame == NOW or (isinstance(frame, int) and frame >= 0)
+        assert frame == NOW or frame >= 0
         self._molecule = molecule
         self._frame = frame
         self._atomsel = None
@@ -50,7 +50,12 @@ class SelectionBase(object):
         return self._frame
 
     def _set_frame(self, frame):
-        assert frame == NOW or (isinstance(frame, int) and frame >= 0)
+        """
+        Sets active frame
+
+        @type frame: Non-negative integer or NOW
+        """
+        assert frame == NOW or frame >= 0
         self.atomsel.frame = frame
         self._frame = frame
 
@@ -155,9 +160,12 @@ class Selection(IterableSelectionMixin, SelectionBase):
     def contacts(self, other, distance):
         """
         Returns iterator of atom pairs which are closer than distance.
+
+        @param distance: Maximal distance between atoms in result.
+        @type distance: Non-negative number
         """
         assert isinstance(other, Selection)
-        assert isinstance(distance, (int, float, long)) and distance >= 0
+        assert distance >= 0
         atoms_self, atoms_other = self.atomsel.contacts(other.atomsel, distance)
         return ((Atom(a, self._molecule, self._frame), Atom(b, other.molecule, other.frame))
                 for a, b in itertools.izip(atoms_self, atoms_other))
@@ -178,12 +186,13 @@ class StaticSelection(SelectionBase):
         Creates the object.
 
         @param index: Index of the selection which can not be changed and provide unique identification.
+        @type index: Non-negative integer
         @param molecule: Selection's molecule. Top if not provider.
         @type molecule: Molecule or None
         @param frame: Selection's frame
         @type frame: Non-negative integer or NOW
         """
-        assert isinstance(index, int) and index >= 0
+        assert index >= 0
         super(StaticSelection, self).__init__(molecule=molecule, frame=frame)
         self._index = index
 
@@ -257,7 +266,7 @@ class Atom(StaticSelection):
             molecule = MOLECULES.top
         else:
             assert isinstance(molecule, Molecule)
-        assert frame == NOW or (isinstance(frame, int) and frame >= 0)
+        assert frame == NOW or frame >= 0
 
         sel = _atomsel(selection, frame=frame, molid=molecule.molid)
         if len(sel) != 1:
@@ -378,12 +387,12 @@ class DynamicSelection(IterableSelectionMixin, SelectionBase):
         Creates the object.
 
         @param name: Name of the selection. Also acts as an identifier.
+        @type name: String
         @param molecule: Selection's molecule. Top if not provider.
         @type molecule: Molecule or None
         @param frame: Selection's frame
         @type frame: Non-negative integer or NOW
         """
-        assert isinstance(name, str)
         super(DynamicSelection, self).__init__(molecule=molecule, frame=frame)
         self._name = name
 

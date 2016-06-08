@@ -83,11 +83,14 @@ class Frames(object):
     def copy(self, frame=None):
         """
         Copies frame and moves the molecule to the new frame.
+
+        @param frame: Frame to be copied. If not defined or `None`, active frame is copied.
+        @type frame: Non-negative integer or `None`
         """
         if frame is None:
             frame = self.molecule.frame
         else:
-            assert isinstance(frame, int) and frame >= 0
+            assert frame >= 0
         _molecule.dupframe(self.molecule.molid, frame)
 
 
@@ -146,9 +149,10 @@ class Molecule(object):
         """
         Creates a new molecule.
 
-        @param molid: Molecule ID
+        @param molid: ID of existing molecule
+        @type molid: Non-negative integer
         """
-        assert isinstance(molid, int) and molid >= 0
+        assert molid >= 0
         if not _molecule.exists(molid):
             raise ValueError("Molecule %d does not exist." % molid)
         self.molid = molid
@@ -184,12 +188,21 @@ class Molecule(object):
         Loads data from file into the molecule.
 
         @param filename: Name of file to be loaded
-        @param filetype: Format of file. If not present it is guessed.
+        @type filename: String
+        @param filetype: Format of file. If not present or `None` it is guessed.
+        @type filetype: One of `FORMAT_` constants, string or `None`
+        @param start: First frame to be loaded. Default is first frame in the file.
+        @type start: Non-negative integer
+        @param stop: Last frame to be loaded. Default (-1) is last frame in the file.
+        @type stop: Non-negative integer or -1
+        @param step: Load every step'th frame. Default is every frame.
+        @type step: Positive integer
         @param wait: Whather to wait until file is completely loaded.
+        @type wait: Boolean
         """
-        assert isinstance(start, int) and start >= 0
-        assert isinstance(stop, int) and stop >= -1
-        assert isinstance(step, int) and step > 0
+        assert start >= 0
+        assert stop >= -1
+        assert step > 0
         if filetype is None:
             filetype = guess_file_format(filename)
             if filetype is None:
@@ -210,7 +223,12 @@ class Molecule(object):
         return _molecule.get_frame(self.molid)
 
     def _set_frame(self, frame):
-        assert isinstance(frame, int) and frame >= 0
+        """
+        Sets the active frame
+
+        @type frame: Non-negative integer
+        """
+        assert frame >= 0
         _molecule.set_frame(self.molid, frame)
 
     frame = property(_get_frame, _set_frame, doc="Molecule's frame")
@@ -234,7 +252,11 @@ class Molecule(object):
         return _molecule.get_visible(self.molid)
 
     def _set_visible(self, value):
-        assert isinstance(value, bool)
+        """
+        Sets molecule visibility
+
+        @type value: Boolean
+        """
         _molecule.set_visible(self.molid, value)
 
     visible = property(_get_visible, _set_visible, doc="Visibility")
