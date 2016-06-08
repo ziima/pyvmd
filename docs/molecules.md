@@ -36,6 +36,11 @@ mol.frame  #>>> 15
 # Set active frame
 mol.frame = 1
 
+# Get molecule visibility
+mol.visible  #>>> True
+# Hide molecule
+mol.visible = False
+
 # Get molecule's name
 mol.name  #>>> 'molecule'
 # Rename the molecule

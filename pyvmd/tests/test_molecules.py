@@ -46,6 +46,20 @@ class TestMolecule(PyvmdTestCase):
         # Check error if molecule does not exists
         self.assertRaises(ValueError, Molecule, 66000)
 
+    def test_visible_property(self):
+        # Test `visible` property
+        mol = Molecule(self.molid)
+
+        self.assertTrue(mol.visible)
+
+        mol.visible = False
+        self.assertFalse(mol.visible)
+        self.assertFalse(VMD.molecule.get_visible(self.molid))
+
+        mol.visible = True
+        self.assertTrue(mol.visible)
+        self.assertTrue(VMD.molecule.get_visible(self.molid))
+
     def test_molecule_create(self):
         # Test molecule creation
         old_molids = VMD.molecule.listall()

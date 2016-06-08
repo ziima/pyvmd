@@ -230,6 +230,15 @@ class Molecule(object):
 
     name = property(_get_name, _set_name, doc="Molecule's name")
 
+    def _get_visible(self):
+        return _molecule.get_visible(self.molid)
+
+    def _set_visible(self, value):
+        assert isinstance(value, bool)
+        _molecule.set_visible(self.molid, value)
+
+    visible = property(_get_visible, _set_visible, doc="Visibility")
+
     @property
     def representations(self):
         """
